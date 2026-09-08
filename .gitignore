@@ -9,3 +9,5 @@ gen_h_files
 *.BAK
 *.d.*
 CMakeUserPresets.json
+/graphify-out
+/.idea
