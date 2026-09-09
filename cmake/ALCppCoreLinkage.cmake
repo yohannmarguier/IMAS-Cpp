@@ -4,6 +4,8 @@
 set( AL_CPP_CORE_TARGET al )
 set( AL_CPP_CORE_PC_REQUIRES "al-core >= ${AL_CORE_VERSION}" )
 set( AL_CPP_CORE_PC_CFLAGS "" )
+# Extra environment the tests and examples need in shim mode (see below).
+set( AL_CPP_SHIM_TEST_ENVIRONMENT "" )
 
 if( AL_USE_MULTIVERSION_SHIM )
   find_package( imas-mvdd-loader REQUIRED CONFIG )
@@ -17,11 +19,20 @@ if( AL_USE_MULTIVERSION_SHIM )
     # Build Core for runtime use even when building only the al-cpp target.
     # Its headers are installed alongside the C++ headers by the Core subproject.
     add_dependencies( al-cpp al )
+    # The shim dlopen()s Core; a Core built into our own build tree is not on
+    # the loader search path, so tests must name it explicitly. Without this
+    # every mirrored call returns a null/failure result: getALVersion() hands
+    # back NULL and al_begin_dataentry_action() errors out.
+    list( APPEND AL_CPP_SHIM_TEST_ENVIRONMENT "IMAS_CORE_LIBRARY=$<TARGET_FILE:al>" )
   else()
     # Installed Core may live in a different prefix. Export only its compiler
     # flags, not its libraries, to downstream pkg-config consumers.
     string( JOIN " " AL_CPP_CORE_PC_CFLAGS ${al_CFLAGS} )
   endif()
+
+  # Report the DD version this HLI was generated against, so the shim can
+  # convert between it and the DD version of the data entry.
+  list( APPEND AL_CPP_SHIM_TEST_ENVIRONMENT "IMAS_MVDD_HLI_DD_VERSION=${DD_VERSION}" )
 
   message( STATUS "C++ Access Layer calls use the multiversion shim (${imas-mvdd-loader_DIR})" )
 endif()

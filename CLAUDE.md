@@ -52,7 +52,11 @@ directly in consumers. A source-built Core remains a build dependency of
 only compiler flags to the C++ pkg-config file. At runtime set
 `IMAS_CORE_LIBRARY` to the real Core shared library when it is not on the loader
 search path, and `IMAS_MVDD_HLI_DD_VERSION` to the HLI's DD version to enable
-conversion. No new shim functions are wrapped. The documented `build-shim/`
+conversion. `AL_CPP_SHIM_TEST_ENVIRONMENT`, set in the same file, injects both
+into the ctest environment of `examples/` and `tests/generator/`, because a
+source-built Core sits in the build tree and is not on the loader search path —
+without it every mirrored call fails (`getALVersion()` returns `NULL`).
+No new shim functions are wrapped. The documented `build-shim/`
 directory is ignored by Git. See `doc/building_installing.rst`.
 
 **Memory/time**: `al-cpp` and `cpp-TestSuite` are compiled with `-O0` on purpose — the
