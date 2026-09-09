@@ -1,4 +1,4 @@
-Any changes should be also refelcted in CLAUDE.md
+Any changes should be also refelcted in AGENTS.md
 
 ## What this repository is
 
@@ -33,6 +33,7 @@ Key configure options (defaults in `common/cmake/ALCommonConfig.cmake`; document
 | `AL_DEVELOPMENT_LAYOUT=ON` | Use sibling checkouts `../IMAS-Core`, `../IMAS-Data-Dictionary`, `../IMAS-Core-Plugins` (forces `AL_DOWNLOAD_DEPENDENCIES=OFF`) |
 | both `OFF` | Expect `al-core` and the DD as installed pkg-config / module packages |
 | `AL_CORE_VERSION`, `DD_VERSION`, `AL_PLUGINS_VERSION` | Git ref per dependency (ignored in development layout) |
+| `AL_USE_MULTIVERSION_SHIM=OFF` | Link C++ calls to the shim found through `CMAKE_PREFIX_PATH` when enabled; Core is still acquired for headers and runtime use |
 | `AL_TESTS`, `AL_EXAMPLES` | Build `cpp-TestSuite` / `examples` and register ctest tests |
 | `AL_PLUGINS=OFF` | Also run every example a second time with plugins enabled |
 | `AL_BACKEND_MDSPLUS`, `AL_BACKEND_HDF5`, `AL_BACKEND_UDA` | Passed through to IMAS-Core |
@@ -40,6 +41,19 @@ Key configure options (defaults in `common/cmake/ALCommonConfig.cmake`; document
 
 `ci/build_and_test.sh` is the reference full build (SDCC modules, all backends);
 `ci/build_docs.sh` builds only the documentation.
+
+Shim linkage is selected in `cmake/ALCppCoreLinkage.cmake`. The generator passes
+`uri.c_str()` in `IDS::open(std::string)` to select the mirrored C ABI rather than
+Core's C++ overload. No public API changes are needed. In shim mode only Core's
+include directories propagate;
+the C++ pkg-config dependency becomes `imas-mvdd-loader` to avoid linking Core
+directly in consumers. A source-built Core remains a build dependency of
+`al-cpp` and installs its headers alongside the HLI. An installed Core contributes
+only compiler flags to the C++ pkg-config file. At runtime set
+`IMAS_CORE_LIBRARY` to the real Core shared library when it is not on the loader
+search path, and `IMAS_MVDD_HLI_DD_VERSION` to the HLI's DD version to enable
+conversion. No new shim functions are wrapped. The documented `build-shim/`
+directory is ignored by Git. See `doc/building_installing.rst`.
 
 **Memory/time**: `al-cpp` and `cpp-TestSuite` are compiled with `-O0` on purpose — the
 generated translation units are so large that optimizing or adding debug symbols exhausts
