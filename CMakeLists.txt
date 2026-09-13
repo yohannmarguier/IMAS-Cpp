@@ -7,6 +7,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/common/cmake/ALLocalPaths.cmake)
 
 option( AL_DOWNLOAD_DEPENDENCIES "Automatically download assets from the AL git repository" ON )
 option( AL_DEVELOPMENT_LAYOUT "Use development repositories from sibling directory" OFF )
+option( AL_USE_MULTIVERSION_SHIM "Route C++ Access Layer calls through IMAS-Multiversion-DD-Loader" OFF )
 if( AL_DEVELOPMENT_LAYOUT AND AL_DOWNLOAD_DEPENDENCIES )
     message( STATUS "AL_DEVELOPMENT_LAYOUT=ON: setting AL_DOWNLOAD_DEPENDENCIES=OFF" )
     set( AL_DOWNLOAD_DEPENDENCIES OFF CACHE BOOL "Automatically download assets from the AL git
@@ -176,7 +177,8 @@ add_dependencies( al-cpp al-cpp-sources )
 # Set target output library name to include the DD version
 set_target_properties( al-cpp PROPERTIES LIBRARY_OUTPUT_NAME "al-cpp-${DD_VERSION}" )
 
-target_link_libraries( al-cpp PUBLIC al PkgConfig::blitz )
+include( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ALCppCoreLinkage.cmake )
+target_link_libraries( al-cpp PUBLIC ${AL_CPP_CORE_TARGET} PkgConfig::blitz )
 # Blitz requires pthread, but doesn't advertize it in it's package config :(
 target_compile_options( al-cpp PUBLIC -pthread )
 target_link_options( al-cpp PUBLIC -pthread )

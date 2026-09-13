@@ -128,7 +128,7 @@ int IdsNs::IDS::open(const std::string &amp;uri, int mode)
     int pulseCtx;
     al_status_t al_status;
 
-    al_status = al_begin_dataentry_action(uri, mode, &amp;pulseCtx);
+    al_status = al_begin_dataentry_action(uri.c_str(), mode, &amp;pulseCtx);
     if (al_status.code &lt; 0)
     {
     printf("Error opening URI %s\n%s\n", "al_begin_dataentry_action", al_status.message);

@@ -54,6 +54,15 @@ else()
     endif()
   endif()
   # Note: added ids_path for backward compatibility with IMAS-Core<5.6
+  set( TESTSUITE_ENVIRONMENT
+    "IMAS_AL_DISABLE_OBSOLESCENT_WARNING=1"
+    "IMAS_AL_DISABLE_VALIDATE=1"
+    "IMAS_VERSION=${DD_VERSION}"
+    "ids_path=${MDSPLUS_MODEL_DIR}"
+    "MDSPLUS_MODELS_PATH=${MDSPLUS_MODEL_DIR}"
+  )
+  # Points the loader at IMAS-Core in shim mode; empty otherwise.
+  list( APPEND TESTSUITE_ENVIRONMENT ${AL_CPP_SHIM_TEST_ENVIRONMENT} )
   set_tests_properties( cpp-TestSuite PROPERTIES
-    ENVIRONMENT "IMAS_AL_DISABLE_OBSOLESCENT_WARNING=1;IMAS_AL_DISABLE_VALIDATE=1;IMAS_VERSION=${DD_VERSION};ids_path=${MDSPLUS_MODEL_DIR};MDSPLUS_MODELS_PATH=${MDSPLUS_MODEL_DIR}" )
+    ENVIRONMENT "${TESTSUITE_ENVIRONMENT}" )
 endif()
