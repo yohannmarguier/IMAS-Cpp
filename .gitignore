@@ -1,5 +1,5 @@
-build/
-/build-shim/
+build*/
+install*/
 lib/
 src/ALClasses.h
 src/ALMethods.cpp
