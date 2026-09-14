@@ -471,6 +471,7 @@ bool IdsNs::<xsl:value-of select="@name"/>_IDSBase::isDefined()
 int IdsNs::<xsl:value-of select="@name"/>_IDSBase::get(int iOccurrence)
 {
         int status = 0;
+        int retStatus = 0;
         al_status_t al_status;
         char *str;
         const char *idsName = "<xsl:value-of select="@name"/>";
@@ -521,7 +522,7 @@ int IdsNs::<xsl:value-of select="@name"/>_IDSBase::get(int iOccurrence)
         } 
 	al_end_action(ctx);
 	
-	return 0;
+	return retStatus;
 }
 
 int IdsNs::<xsl:value-of select="@name"/>_IDSBase::put()
@@ -532,6 +533,7 @@ int IdsNs::<xsl:value-of select="@name"/>_IDSBase::put()
 int IdsNs::<xsl:value-of select="@name"/>_IDSBase::put(int iOccurrence)
 {
 	int status = 0;
+	int retStatus = 0;
 	al_status_t al_status;
 	const char *idsName = "<xsl:value-of select="@name"/>";
     std::string idsFullName = std::string(idsName);
@@ -598,7 +600,7 @@ int IdsNs::<xsl:value-of select="@name"/>_IDSBase::put(int iOccurrence)
         }
 	al_end_action(putOpCtx);
 	
-	return 0;
+	return retStatus;
 }
 
 int IdsNs::<xsl:value-of select="@name"/>_IDSBase::putSlice()
@@ -609,6 +611,7 @@ int IdsNs::<xsl:value-of select="@name"/>_IDSBase::putSlice()
 int IdsNs::<xsl:value-of select="@name"/>_IDSBase::putSlice(int iOccurrence)
 {
     int status = 0;
+    int retStatus = 0;
     al_status_t al_status;
 	const char *idsName = "<xsl:value-of select="@name"/>";
     std::string idsFullName = std::string(idsName);
@@ -700,7 +703,7 @@ int IdsNs::<xsl:value-of select="@name"/>_IDSBase::putSlice(int iOccurrence)
                 return al_status.code;
         }
         al_end_action(putSliceOpCtx);
-	return 0;
+	return retStatus;
 }
 
 int IdsNs::<xsl:value-of select="@name"/>_IDSBase::getSample(double tmin, double tmax, const std::vector&lt;double&gt; &amp;dtime, int interp)
@@ -712,6 +715,7 @@ int IdsNs::<xsl:value-of select="@name"/>_IDSBase::getSample(double tmin, double
 int IdsNs::<xsl:value-of select="@name"/>_IDSBase::getSample(int iOccurrence, double tmin, double tmax, const std::vector&lt;double&gt; &amp;dtime, int interp)
 {
         int status = 0;
+        int retStatus = 0;
         al_status_t al_status;
         char *str;
         const char *idsName = "<xsl:value-of select="@name"/>";
@@ -772,7 +776,7 @@ int IdsNs::<xsl:value-of select="@name"/>_IDSBase::getSample(int iOccurrence, do
         } 
 	al_end_action(ctx);
 	
-	return 0;
+	return retStatus;
 }
 
 int IdsNs::<xsl:value-of select="@name"/>_IDSBase::partialGet(const std::string &amp;includes, 
@@ -848,7 +852,7 @@ int IdsNs::<xsl:value-of select="@name"/>_IDSBase::partialGet(int iOccurrence, c
                 return al_status.code;
           }
 	
-	return 0;
+	return status;
 }
 
 
@@ -856,6 +860,7 @@ int IdsNs::<xsl:value-of select="@name"/>_IDSBase::partialGet(int iOccurrence, c
 int IdsNs::<xsl:value-of select="@name"/>_IDSBase::deleteAll(int iOccurrence)
 {
     int status = 0;
+    int retStatus = 0;
     al_status_t al_status;
 	const char *idsName = "<xsl:value-of select="@name"/>";
     std::string idsFullName = std::string(idsName);
@@ -886,7 +891,7 @@ int IdsNs::<xsl:value-of select="@name"/>_IDSBase::deleteAll(int iOccurrence)
 
 	al_end_action(ctx);
 	
-	return 0;
+	return retStatus;
 }
 
 int IdsNs::<xsl:value-of select="@name"/>_IDSBase::deleteAll()
@@ -914,6 +919,7 @@ int IdsNs::<xsl:value-of select="@name"/>_IDSBase::getSlice(int iOccurrence, dou
   </xsl:when>
   <xsl:otherwise>
     int status = 0;
+    int retStatus = 0;
     al_status_t al_status;
 	const char *idsName = "<xsl:value-of select="@name"/>";
     std::string idsFullName = std::string(idsName);
@@ -965,7 +971,7 @@ int IdsNs::<xsl:value-of select="@name"/>_IDSBase::getSlice(int iOccurrence, dou
         } 
 	al_end_action(getSliceOpCtx);
 
-	return 0;
+	return retStatus;
   </xsl:otherwise>
 </xsl:choose>
 }
@@ -2124,6 +2130,7 @@ or @data_type='cpx_1d_type' or @data_type='CPX_1D' or @data_type='STR_1D') and c
     <xsl:text> int IdsNs::</xsl:text> <xsl:value-of select="ancestor::IDS/@name"/>_IDSBase::<xsl:value-of select="fn:replace(@path,'/','::')"/><xsl:text>::put(int ctx, int idsTimeMode, const std::string &amp;idsFullName)&#xA;</xsl:text>
 {
 	int status = -1;
+	int retStatus = 0;
     al_status_t al_status;
 	int arraySize = -1;
 	int aosCtx = -1;
@@ -2134,7 +2141,7 @@ or @data_type='cpx_1d_type' or @data_type='CPX_1D' or @data_type='STR_1D') and c
 		<xsl:with-param name="dynamic_only" select="'no'"/>
 	</xsl:apply-templates>
 
-	return 0;
+	return retStatus;
 }
 </xsl:template>
 
@@ -2147,6 +2154,7 @@ or @data_type='cpx_1d_type' or @data_type='CPX_1D' or @data_type='STR_1D') and c
     <xsl:text> int IdsNs::</xsl:text> <xsl:value-of select="ancestor::IDS/@name"/>_IDSBase::<xsl:value-of select="fn:replace(@path,'/','::')"/><xsl:text>::putSlice(int ctx, int idsTimeMode, const std::string &amp;idsFullName)&#xA;</xsl:text>
 {
 	int status = -1;
+	int retStatus = 0;
     al_status_t al_status;
 	int arraySize = -1;
 	int aosCtx = -1;
@@ -2157,7 +2165,7 @@ or @data_type='cpx_1d_type' or @data_type='CPX_1D' or @data_type='STR_1D') and c
 		<xsl:with-param name="dynamic_only" select="'yes'"/>
 	</xsl:apply-templates>
 
-	return 0;
+	return retStatus;
 }
 </xsl:if>
 </xsl:template>
@@ -2169,6 +2177,7 @@ or @data_type='cpx_1d_type' or @data_type='CPX_1D' or @data_type='STR_1D') and c
 <xsl:text> int IdsNs::</xsl:text> <xsl:value-of select="ancestor::IDS/@name"/>_IDSBase::<xsl:value-of select="fn:replace(@path,'/','::')"/><xsl:text>::get(int ctx, int idsTimeMode)&#xA;</xsl:text>
 {
 	int status = -1;
+	int retStatus = 0;
     al_status_t al_status;
 	int arraySize = -1;
 	int aosCtx = -1;
@@ -2178,7 +2187,7 @@ or @data_type='cpx_1d_type' or @data_type='CPX_1D' or @data_type='STR_1D') and c
 	<xsl:apply-templates select="field" mode="GET_SINGLE"/>
 
 
-	return 0;
+	return retStatus;
 }
 </xsl:template>
 
@@ -2189,13 +2198,14 @@ or @data_type='cpx_1d_type' or @data_type='CPX_1D' or @data_type='STR_1D') and c
 <xsl:text> int IdsNs::</xsl:text> <xsl:value-of select="ancestor::IDS/@name"/>_IDSBase::<xsl:value-of select="fn:replace(@path,'/','::')"/><xsl:text>::deleteAll(int ctx)&#xA;</xsl:text>
 {
 	int status = -1;
+	int retStatus = 0;
     al_status_t al_status;
 	std::string fieldPath = "";
 
 	<xsl:apply-templates select="field" mode="DELETE"/>
 
 
-	return 0;
+	return retStatus;
 }
 </xsl:if>
 </xsl:template>
@@ -2243,7 +2253,9 @@ See IDSDef2Classes.xsl  -->
 	<xsl:choose>
 		<xsl:when test="@data_type='structure'">
 			status = <xsl:value-of select="@name"/>.deleteAll(ctx);
-			if (status != 0)
+			if (status &gt; 0)
+				retStatus = status;
+			if (status &lt; 0)
 				return status;
 		</xsl:when>
 		<xsl:otherwise>
@@ -2449,6 +2461,8 @@ See IDSDef2Classes.xsl  -->
     <!-- YB 2014 -->
 		<xsl:when test="@data_type='structure'">
           status = <xsl:value-of select="@name"/>.<xsl:value-of select="$methodName"/>(ctx, idsTimeMode, idsFullName);
+          if (status &gt; 0)
+          	retStatus = status;
 		  if (status &lt; 0)
 			return status;
 		</xsl:when>
@@ -2479,6 +2493,8 @@ See IDSDef2Classes.xsl  -->
 
 				for( int i = 0; i &lt;arraySize; i++){
                     status = <xsl:value-of select="@name"/>(i).<xsl:value-of select="$methodName"/>(aosCtx, idsTimeMode, idsFullName);
+                    if (status &gt; 0)
+                    	retStatus = status;
 					if (status &lt; 0)
 					{	
 						al_end_action(ctx);
@@ -2529,6 +2545,8 @@ See IDSDef2Classes.xsl  -->
 
 				for( int i = 0; i &lt;arraySize; i++){
                     status = <xsl:value-of select="@name"/>(i).<xsl:value-of select="$methodName"/>(aosCtx, idsTimeMode, idsFullName);
+                    if (status &gt; 0)
+                    	retStatus = status;
                     if (status &lt; 0)
 					{	
 						al_end_action(ctx);
@@ -2585,6 +2603,8 @@ See IDSDef2Classes.xsl  -->
 
 				for( int i = 0; i &lt;arraySize; i++){
                     status = <xsl:value-of select="@name"/>(i).<xsl:value-of select="$methodName"/>(aosCtx, idsTimeMode, idsFullName);
+                    if (status &gt; 0)
+                    	retStatus = status;
                     if (status &lt; 0)
 					{	
 						al_end_action(ctx);
@@ -2690,7 +2710,9 @@ See IDSDef2Classes.xsl  -->
     <!-- YB 2014 -->
 		<xsl:when test="@data_type='structure'">
 		status = <xsl:value-of select="@name"/>.get(ctx, idsTimeMode);
-		if (status != 0)
+		if (status &gt; 0)
+			retStatus = status;
+		if (status &lt; 0)
 			return status;
 		</xsl:when>
 
@@ -2720,6 +2742,8 @@ See IDSDef2Classes.xsl  -->
 				<xsl:value-of select="@name"/>.resize(arraySize);
 				for( int i = 0; i &lt;arraySize; i++){
 					status = <xsl:value-of select="@name"/>(i).get(aosCtx, idsTimeMode);
+					if (status &gt; 0)
+						retStatus = status;
                     if (status &lt; 0)
 					{	
 						al_end_action(ctx);
@@ -2766,6 +2790,8 @@ See IDSDef2Classes.xsl  -->
 				<xsl:value-of select="@name"/>.resize(arraySize);
 				for( int i = 0; i &lt;arraySize; i++){
 					status = <xsl:value-of select="@name"/>(i).get(aosCtx, idsTimeMode);
+					if (status &gt; 0)
+						retStatus = status;
                     if (status &lt; 0)
 					{	
 						al_end_action(ctx);
@@ -2821,6 +2847,8 @@ See IDSDef2Classes.xsl  -->
 				    <xsl:value-of select="@name"/>.resize(arraySize);
 				    for( int i = 0; i &lt;arraySize; i++){
 					    status = <xsl:value-of select="@name"/>(i).get(aosCtx, idsTimeMode);
+					    if (status &gt; 0)
+					    	retStatus = status;
 					    if (status &lt; 0)
 					    {	
 						    al_end_action(ctx);
