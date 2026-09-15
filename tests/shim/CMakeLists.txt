@@ -1,12 +1,14 @@
-# The shim conformance suite scaffold (issue #10).
+# The shim conformance suite scaffold (issue #10), plus the harness-integrity
+# comparator (issue #11).
 #
-# The linkage test below is this suite's first, and its only content until
-# later tickets (issues #11-14, #24) add the contract-assertion and
-# behaviour-pin families from docs/SHIM_SUITE_CONVENTION.md S5. Until linkage
-# passes, nothing else the suite will ever say means anything: every
-# functional test in this repository's own suite passes just as well against
-# a build that resolved its symbols straight to IMAS-Core and converted
-# nothing. See tests/shim/README.md for what is and is not covered so far.
+# Registration order below follows docs/SHIM_SUITE_CONVENTION.md S5.1's
+# Family 1 (harness integrity): linkage, then the comparator's own truth
+# table, then the source check that covers what the comparator's type system
+# cannot. Until linkage passes, nothing else the suite will ever say means
+# anything: every functional test in this repository's own suite passes just
+# as well against a build that resolved its symbols straight to IMAS-Core and
+# converted nothing. See tests/shim/README.md for what is and is not covered
+# so far.
 #
 # The whole file is registered only in a shim build: with
 # AL_USE_MULTIVERSION_SHIM off there is nothing to assert and the test list
@@ -74,6 +76,34 @@ set_tests_properties( cpp-test-shim-run-guard PROPERTIES
   FAIL_REGULAR_EXPRESSION "RUN-GUARD-FAILURE"
 )
 
+# F1.2 comparison (docs/SHIM_SUITE_CONVENTION.md S4.4, S5.1): the shared
+# comparator's own synthetic truth table, driven from literals -- no rule
+# table, no fixture, no pulse, because a pulse-based test can never prove
+# its own oracle right.
+add_executable( cpp-test-shim-comparator test_shim_comparator.cpp )
+add_test( NAME cpp-test-shim-comparison COMMAND cpp-test-shim-comparator )
+set_tests_properties( cpp-test-shim-comparison PROPERTIES
+  LABELS "shim;harness"
+  FAIL_REGULAR_EXPRESSION "COMPARATOR-FAILURE"
+)
+
+# F1.3 verdict-orientation (docs/SHIM_SUITE_CONVENTION.md S4.3, S5.1): the
+# residual hole the comparator's distinct wrapper types cannot close on
+# their own -- a call that spells both `oracle=`/`converted=` comments but
+# wraps the wrong reading in each. Counts the named sides this ticket's own
+# comparator test contributes; later tickets' rule programs raise the floor
+# as they add Compare() call sites of their own.
+set( AL_SHIM_VERDICT_ORIENTATION_FLOOR 11 )
+add_test( NAME cpp-test-shim-verdict-orientation
+  COMMAND ${CMAKE_COMMAND}
+    -D "SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}"
+    -D "FLOOR=${AL_SHIM_VERDICT_ORIENTATION_FLOOR}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/check_verdict_orientation.cmake"
+)
+set_tests_properties( cpp-test-shim-verdict-orientation PROPERTIES
+  LABELS "shim;harness"
+)
+
 # Give one test a private, empty loss-log directory.
 #
 # Leaving IMAS_MVDD_LOSS_LOG_DIR unset is not neutral: docs/
@@ -83,12 +113,12 @@ set_tests_properties( cpp-test-shim-run-guard PROPERTIES
 # read can be non-exact therefore needs a directory of its own -- see
 # docs/SHIM_SUITE_CONVENTION.md S3.4 -- whether or not it asserts on it.
 #
-# Neither test registered above calls into the shim's runtime (linkage only
-# inspects the built library; run-guard makes no AL call), so nothing here
-# calls this function yet. It is part of this ticket's scaffold anyway: the
-# convention sets this rule "once, relied on by every later ticket", and the
-# contract-assertion and behaviour-pin families (issues #11-14, #24) need it
-# from their first test.
+# None of the tests registered above call into the shim's runtime (linkage
+# only inspects the built library; run-guard and the comparator tests make
+# no AL call), so nothing here calls this function yet. It is part of this
+# ticket's scaffold anyway: the convention sets this rule "once, relied on
+# by every later ticket", and the contract-assertion and behaviour-pin
+# families (issues #12-14, #24) need it from their first test.
 function( al_cpp_shim_private_loss_log test_name out_var )
   set( _dir "${CMAKE_CURRENT_BINARY_DIR}/${test_name}-loss-log" )
   add_test( NAME ${test_name}-loss-log-clean
