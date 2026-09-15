@@ -522,7 +522,9 @@ int IdsNs::<xsl:value-of select="@name"/>_IDSBase::get(int iOccurrence)
             printf("GET: error calling al_unbind_readback_plugins for %s IDS: %s\n", idsFullName.c_str(), al_status.message);
                 return al_status.code;
         } 
-	al_end_action(ctx);
+	al_status = al_end_action(ctx);
+	if (IdsNs::Ids::isError(al_status, __FILE__, __LINE__, __func__))
+		return al_status.code;
 	
 	return retStatus;
 }
@@ -790,7 +792,9 @@ int IdsNs::<xsl:value-of select="@name"/>_IDSBase::getSample(int iOccurrence, do
             printf("GET_SAMPLE: error calling al_unbind_readback_plugins for %s IDS: %s\n", idsFullName.c_str(), al_status.message);
                 return al_status.code;
         } 
-	al_end_action(ctx);
+	al_status = al_end_action(ctx);
+	if (IdsNs::Ids::isError(al_status, __FILE__, __LINE__, __func__))
+		return al_status.code;
 	
 	return retStatus;
 }
@@ -991,7 +995,9 @@ int IdsNs::<xsl:value-of select="@name"/>_IDSBase::getSlice(int iOccurrence, dou
             printf("GET: error calling al_unbind_readback_plugins for %s IDS: %s\n", idsFullName.c_str(), al_status.message);
                 return al_status.code;
         } 
-	al_end_action(getSliceOpCtx);
+	al_status = al_end_action(getSliceOpCtx);
+	if (IdsNs::Ids::isError(al_status, __FILE__, __LINE__, __func__))
+		return al_status.code;
 
 	return retStatus;
   </xsl:otherwise>
