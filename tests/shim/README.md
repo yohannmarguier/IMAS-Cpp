@@ -5,11 +5,11 @@ This directory holds the Tier-1 shim conformance suite described in
 `AL_USE_MULTIVERSION_SHIM=ON`; with shim mode off the registered test list is
 exactly what it was before this suite existed.
 
-## Scope so far (issues #10, #11, #12, #13, #14)
+## Scope so far (issues #10, #11, #12, #13, #14, #15, #21)
 
 Issue #10 registered the suite's scaffold and its first test.
 Issue #11 added the shared comparison oracle every fixture-driven family
-(issues #13, #14, #24) will read its verdicts from. Issue #12 vendors the
+(issues #13, #14, #21) will read its verdicts from. Issue #12 vendors the
 fixture pair those families read and the two isolation helpers a write and a
 read scenario each need:
 
@@ -47,7 +47,7 @@ read scenario each need:
   3.39.0 and DD 4.1.1, describing one equilibrium, generated from a single
   shared value table by two modules that decide only *where* each value
   goes. Every fixture-driven family this suite still needs (issues #13, #14,
-  #24) reads its expected values out of these pulses rather than out of a
+  #21) reads its expected values out of these pulses rather than out of a
   literal (`docs/SHIM_SUITE_CONVENTION.md` D4).
 - `cpp-test-shim-fixture-provenance` (F1.4, `harness`): regenerates the pair
   outside the checkout with `imas-python-fixtures/verify_fixtures.sh` and
@@ -66,7 +66,7 @@ read scenario each need:
   the derivation script did. Registers only when the venv additionally has
   `h5py`.
 - `al_cpp_shim_private_fixture_copy()` / `cpp-test-shim-fixture-copy`: the
-  CMake function a write scenario (issue #24) uses to get a freshly made
+  CMake function a write scenario (issue #21) uses to get a freshly made
   private copy of a fixture, so parallel scenarios cannot collide and a
   failed run leaves no poison. The self-test exercises it against a
   synthetic directory, not a pulse.
@@ -98,14 +98,31 @@ read scenario each need:
   `beta_tor_norm` remains absent, and its source header records why its
   otherwise indistinguishable result must remain a separate scenario.
 
-None of `cpp-test-shim-linkage`, `cpp-test-shim-run-guard`, the comparator
-tests, or the fixture/stamp-variant tests above call into the shim's runtime
-(fixture provenance and the stamp-variant check inspect and derive HDF5
-directly; the copy and digest self-tests use a synthetic directory), so this
-ticket still declares no **profile** (Tier-1 read tolerance) or **direction**
-(which DD pair, which way) -- see `docs/SHIM_SUITE_CONVENTION.md` S2.3 and
-D2. Issue #24 owns that declaration and the coverage boundaries, and this
-section should be replaced with them as that work lands.
+- `cpp-test-shim-structural-rules` (F4.1, `contract-assertion`): reads the
+  DD 3.39.0 fixture through the shim and the DD 4.1.1 fixture same-version,
+  then checks all 23 structural rules at the public C++ HLI. Its hand-authored
+  table has 23 structural, 30 COCOS, 13 right-only, and 5 refusal entries;
+  every entry cites the conversion map or fixture provenance. The transcription
+  audit records the externally reachable map's unresolved includes (including
+  common renames) and the map's actual 30 COCOS flips, rather than the stale
+  quoted count of 32. Each rule derives its expected verdict from the shared
+  kind mapping, and a multi-leaf rule reports its first non-agreeing verdict.
+- `cpp-test-shim-roundtrip-cross-dd` and `cpp-test-shim-roundtrip-same-dd`
+  (F6.1--F6.2, `contract-assertion`): two registrations of one program that
+  appends a curated `psi_axis` value at a COCOS sign-flip path, then reads the
+  entire occurrence back. Each setup creates a fresh private fixture copy and
+  loss-log directory. The older-DD run explicitly permits a partial read; the
+  same-DD control explicitly requires a clean read. Both require the slice and
+  time base to grow by one, preserve time mode, and return the appended time
+  and value. The source header records why this consistency check cannot prove
+  the stored path, raw sign, stamp, or candidate selection.
+
+The round-trip pair establishes this suite's **Profile A** direction: a DD
+4.1.1 HLI reads and writes DD 3.39.0 pulses, tolerating per-field refusals as
+partial operations. Its same-DD DD 4.1.1 control proves that a successful
+round trip did not merely avoid conversion. It does not establish the broader
+read-rule catalogue or native on-disk assertions; those remain separate
+families under `docs/SHIM_SUITE_CONVENTION.md` S5.
 
 IMAS-Core is pinned to a fork commit carrying the path-aware HDF5 delete fix
 (IMAS-Core #63/#64) whenever `AL_USE_MULTIVERSION_SHIM=ON` -- see the comment

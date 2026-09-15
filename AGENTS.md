@@ -90,6 +90,13 @@ Three test groups:
   provenance and derived stamp-state variants are themselves registered
   tests, gated on a Python venv with `imas-python`/`h5py` and `h5diff` being
   present.
+  `cpp-test-shim-roundtrip-cross-dd` and `cpp-test-shim-roundtrip-same-dd`
+  are paired registrations of one slice-append program (issue #21): each has
+  a fresh private fixture and loss-log directory; the DD 3.39.0 run explicitly
+  permits `PARTIAL_READ`, while the DD 4.1.1 control requires clean success.
+  Both assert exact time-slice/time-base growth, unchanged time mode, and a
+  curated COCOS-mapped `psi_axis` round trip. The test is a consistency check,
+  not evidence of the native on-disk stored path or sign.
 
 Things that bite:
 - Tests pass/fail on **output pattern matching**, not exit code: `FAIL_REGULAR_EXPRESSION`

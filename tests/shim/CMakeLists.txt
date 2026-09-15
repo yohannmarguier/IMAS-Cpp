@@ -93,7 +93,9 @@ set_tests_properties( cpp-test-shim-comparison PROPERTIES
 # wraps the wrong reading in each. Counts the named sides this ticket's own
 # comparator test contributes; later tickets' rule programs raise the floor
 # as they add Compare() call sites of their own.
-set( AL_SHIM_VERDICT_ORIENTATION_FLOOR 11 )
+# Eleven sides are contributed by the comparator self-test; F4.1 adds the
+# fixture-driven comparison site's twelfth named pair.
+set( AL_SHIM_VERDICT_ORIENTATION_FLOOR 12 )
 add_test( NAME cpp-test-shim-verdict-orientation
   COMMAND ${CMAKE_COMMAND}
     -D "SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}"
@@ -106,8 +108,8 @@ set_tests_properties( cpp-test-shim-verdict-orientation PROPERTIES
 
 # F1.4 fixture-provenance (docs/SHIM_SUITE_CONVENTION.md S3.2, S5.1): the
 # checked-in equilibrium pulses must be what imas-python-fixtures/ produces,
-# or every rule-table assertion this suite will ever make (issues #13, #14,
-# #24) is against numbers nobody can re-derive. verify_fixtures.sh
+# or every rule-table assertion this suite will ever make (issues #13--15,
+# #21, #24) is against numbers nobody can re-derive. verify_fixtures.sh
 # regenerates them outside the checkout and compares every HDF5 dataset with
 # h5diff -- registering it here is what turns that from a script somebody
 # may remember to run into a criterion the suite enforces.
@@ -131,7 +133,8 @@ else()
     "imas-python-fixtures/.venv (see its README) and h5diff" )
 endif()
 
-# The root every fixture-driven family in this suite (issues #13, #14, #24)
+# The root every fixture-driven family in this suite (issues #13--15, #21,
+# #24)
 # reads from.
 set( AL_SHIM_FIXTURE_ROOT "${CMAKE_SOURCE_DIR}/imas-python-fixtures/fixtures" )
 
@@ -171,7 +174,7 @@ set_tests_properties( cpp-test-shim-fixture-copy PROPERTIES
 # no AL call), so nothing here calls this function yet. It is part of this
 # ticket's scaffold anyway: the convention sets this rule "once, relied on
 # by every later ticket", and the contract-assertion and behaviour-pin
-# families (issues #12-14, #24) need it from their first test.
+# families (issues #12--15, #21, #24) need it from their first test.
 function( al_cpp_shim_private_loss_log test_name out_var )
   set( _dir "${CMAKE_CURRENT_BINARY_DIR}/${test_name}-loss-log" )
   add_test( NAME ${test_name}-loss-log-clean
@@ -194,10 +197,10 @@ endfunction()
 # A write scenario's private fixture copy (docs/SHIM_SUITE_CONVENTION.md
 # S3.3): "A write test MUST run against a private copy made fresh before
 # each run, so scenarios can run in parallel and a failed run leaves no
-# poison." No test below calls this yet -- the round-trip, torn-write and
-# full-put-stamp write scenarios are issue #24's -- but the helper ships
-# with this ticket for the same reason al_cpp_shim_private_loss_log did with
-# #10: the family that needs it should need nothing else from the scaffold.
+# poison." The round-trip pair below uses it; torn-write and full-put-stamp
+# remain issue #24's. The helper ships with this ticket for the same reason
+# al_cpp_shim_private_loss_log did with #10: the family that needs it should
+# need nothing else from the scaffold.
 function( al_cpp_shim_private_fixture_copy test_name source out_var )
   set( _dir "${CMAKE_CURRENT_BINARY_DIR}/${test_name}-fixture" )
   add_test( NAME ${test_name}-fixture-copy
@@ -376,5 +379,77 @@ else()
     al_cpp_shim_add_passthrough_scenario(
       cpp-test-shim-stamp-mismatch-no-artifact stamp-mismatch-no-artifact
       "${AL_SHIM_STAMP_MISMATCH_FIXTURE}" TRUE )
+
+    # Family 4.1 (docs/SHIM_SUITE_CONVENTION.md S5.4, issue #15): compare
+    # each structural conversion rule against the same equilibrium read from
+    # the DD 4.1.1 oracle fixture.  The program owns the rule table and the
+    # public-HLI reads; CTest supplies the immutable fixture root and private
+    # loss-log directory that make the cross-version read isolated.
+    add_executable( cpp-test-shim-structural-rules test_shim_structural_rules.cpp )
+    target_include_directories( cpp-test-shim-structural-rules PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} )
+    target_link_libraries( cpp-test-shim-structural-rules PRIVATE al-cpp )
+    al_cpp_shim_private_loss_log( cpp-test-shim-structural-rules
+      AL_SHIM_STRUCTURAL_LOSS_LOG_DIR )
+    add_test( NAME cpp-test-shim-structural-rules
+      COMMAND ${CMAKE_COMMAND}
+        -D "FIXTURE_ROOT=${AL_SHIM_FIXTURE_ROOT}"
+        -D "COMMAND_TO_RUN=$<TARGET_FILE:cpp-test-shim-structural-rules>;${AL_SHIM_FIXTURE_ROOT}"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_fixture_unchanged.cmake"
+    )
+    set_tests_properties( cpp-test-shim-structural-rules PROPERTIES
+      ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT};IMAS_MVDD_LOSS_LOG_DIR=${AL_SHIM_STRUCTURAL_LOSS_LOG_DIR}"
+      FIXTURES_REQUIRED cpp-test-shim-structural-rules-loss-log
+      LABELS "shim;contract-assertion"
+      FAIL_REGULAR_EXPRESSION "STRUCTURAL-FAILURE;SCENARIO-FAILURE"
+    )
   endif()
+endif()
+
+# Family 6 (docs/SHIM_SUITE_CONVENTION.md S5.6, issue #21): one program
+# exercises the slice-append round trip both across DD versions and against a
+# same-version control. Keep registration in one parameterless function:
+# these two executions are one argument, and neither may be independently
+# selected out of the suite.
+if( NOT AL_BACKEND_HDF5 )
+  message( STATUS "Not registering shim round-trip scenarios: HDF5 backend is disabled" )
+else()
+  add_executable( cpp-test-shim-roundtrip test_shim_roundtrip.cpp )
+  target_include_directories( cpp-test-shim-roundtrip PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} )
+  target_link_libraries( cpp-test-shim-roundtrip PRIVATE al-cpp )
+
+  function( al_cpp_shim_add_roundtrip_pair )
+    set( _cross_test cpp-test-shim-roundtrip-cross-dd )
+    set( _same_test cpp-test-shim-roundtrip-same-dd )
+
+    al_cpp_shim_private_fixture_copy( ${_cross_test}
+      "${AL_SHIM_FIXTURE_ROOT}/dd-3.39.0" _cross_fixture )
+    al_cpp_shim_private_fixture_copy( ${_same_test}
+      "${AL_SHIM_FIXTURE_ROOT}/dd-4.1.1" _same_fixture )
+    al_cpp_shim_private_loss_log( ${_cross_test} _cross_loss_log_dir )
+    al_cpp_shim_private_loss_log( ${_same_test} _same_loss_log_dir )
+
+    add_test( NAME ${_cross_test}
+      COMMAND $<TARGET_FILE:cpp-test-shim-roundtrip>
+        "${_cross_fixture}" partial-read-allowed
+    )
+    set_tests_properties( ${_cross_test} PROPERTIES
+      FIXTURES_REQUIRED "${_cross_test}-fixture;${_cross_test}-loss-log"
+      LABELS "shim;contract-assertion"
+      ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT};IMAS_MVDD_LOSS_LOG_DIR=${_cross_loss_log_dir}"
+      FAIL_REGULAR_EXPRESSION "ROUNDTRIP-FAILURE"
+    )
+
+    add_test( NAME ${_same_test}
+      COMMAND $<TARGET_FILE:cpp-test-shim-roundtrip>
+        "${_same_fixture}" clean-read
+    )
+    set_tests_properties( ${_same_test} PROPERTIES
+      FIXTURES_REQUIRED "${_same_test}-fixture;${_same_test}-loss-log"
+      LABELS "shim;contract-assertion"
+      ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT};IMAS_MVDD_LOSS_LOG_DIR=${_same_loss_log_dir}"
+      FAIL_REGULAR_EXPRESSION "ROUNDTRIP-FAILURE"
+    )
+  endfunction()
+
+  al_cpp_shim_add_roundtrip_pair()
 endif()

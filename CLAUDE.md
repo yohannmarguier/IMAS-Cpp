@@ -108,6 +108,22 @@ Three test groups:
   contract-assertion red list; update it with a reviewed cause and owner
   whenever a contract assertion is red, and identify the test host and loaded
   IMAS-Core whenever recording an observed empty list.
+  `cpp-test-shim-roundtrip-cross-dd` and `cpp-test-shim-roundtrip-same-dd`
+  are paired registrations of one slice-append program (issue #21): each has
+  a fresh private fixture and loss-log directory; the DD 3.39.0 run explicitly
+  permits `PARTIAL_READ`, while the DD 4.1.1 control requires clean success.
+  Both assert exact time-slice/time-base growth, unchanged time mode, and a
+  curated COCOS-mapped `psi_axis` round trip. The test is a consistency check,
+  not evidence of the native on-disk stored path or sign.
+  `cpp-test-shim-structural-rules` (issue #15) reads DD 3.39.0 through the
+  shim and DD 4.1.1 same-version through the public HLI, asserting every rule
+  in its 23-entry structural table. `tests/shim/shim_rule_table.h` also
+  records the 30 COCOS, 13 right-only, and 5 refusal rules, each with a
+  map/fixture citation. The cited table is deliberately hand-authored: the
+  external map has unresolved includes that carry common renames. Its audit
+  records the map's 30 flips (not the stale quoted 32); `shim_rule_check.h`
+  derives every expectation from the sole kind-to-verdict mapping and counts
+  checked entries against the table size.
 
 Things that bite:
 - Tests pass/fail on **output pattern matching**, not exit code: `FAIL_REGULAR_EXPRESSION`
