@@ -3,12 +3,14 @@
 # check_shim_run_guard and the comparator test themselves from literals: a
 # pulse-based test can never prove its own harness right.
 #
-# Three properties, none of which the type system enforces:
+# Five properties, none of which the type system enforces:
 #   1. a command that leaves the fixture alone passes;
 #   2. a command that mutates a file under the fixture fails, and specifically
 #      via SCENARIO-FAILURE, not by crashing some other way;
 #   3. an empty fixture directory is refused outright, so "nothing changed"
 #      can never be reported by having nothing to compare.
+#   4. an expected standard-output substring is required when requested;
+#   5. a matching substring cannot hide a command that exited unsuccessfully.
 include( "${CMAKE_CURRENT_LIST_DIR}/fixture_digest.cmake" )
 
 set( _work_dir "${CMAKE_CURRENT_BINARY_DIR}/fixture-digest-self-test" )
@@ -41,6 +43,37 @@ if( NOT _clean_result EQUAL 0 )
   message( FATAL_ERROR "FIXTURE-DIGEST-FAILURE: a read that left the fixture alone was reported as changed:\n${_clean_output}" )
 endif()
 
+# --- property 4: a requested diagnostic must be emitted on stdout ---------
+execute_process(
+  COMMAND "${CMAKE_COMMAND}" -D "FIXTURE_ROOT=${_work_dir}/fixture"
+    -D "COMMAND_TO_RUN=${CMAKE_COMMAND};-E;echo;malformed DD-version stamp"
+    -D "EXPECTED_STDOUT_SUBSTRING=malformed DD-version stamp"
+    -P "${CMAKE_CURRENT_LIST_DIR}/verify_fixture_unchanged.cmake"
+  RESULT_VARIABLE _stdout_result
+  OUTPUT_VARIABLE _stdout_output ERROR_VARIABLE _stdout_output
+)
+if( NOT _stdout_result EQUAL 0 )
+  message( FATAL_ERROR "FIXTURE-DIGEST-FAILURE: a matching standard-output diagnostic was not accepted:\n${_stdout_output}" )
+endif()
+
+# --- property 5: exit status is checked before matching stdout -------------
+file( WRITE "${_work_dir}/output-then-fail.cmake"
+  "execute_process(COMMAND \"${CMAKE_COMMAND}\" -E echo \"malformed DD-version stamp\")\nmessage(FATAL_ERROR \"deliberate command failure\")\n" )
+execute_process(
+  COMMAND "${CMAKE_COMMAND}" -D "FIXTURE_ROOT=${_work_dir}/fixture"
+    -D "COMMAND_TO_RUN=${CMAKE_COMMAND};-P;${_work_dir}/output-then-fail.cmake"
+    -D "EXPECTED_STDOUT_SUBSTRING=malformed DD-version stamp"
+    -P "${CMAKE_CURRENT_LIST_DIR}/verify_fixture_unchanged.cmake"
+  RESULT_VARIABLE _stdout_failure_result
+  OUTPUT_VARIABLE _stdout_failure_output ERROR_VARIABLE _stdout_failure_output
+)
+if( _stdout_failure_result EQUAL 0 )
+  message( FATAL_ERROR "FIXTURE-DIGEST-FAILURE: matching output hid a failed command" )
+endif()
+if( NOT _stdout_failure_output MATCHES "SCENARIO-FAILURE" )
+  message( FATAL_ERROR "FIXTURE-DIGEST-FAILURE: a failed command with matching output lacked SCENARIO-FAILURE:\n${_stdout_failure_output}" )
+endif()
+
 # --- property 2: a mutating command fails, distinctively -------------------
 # The mutation must happen *inside* the wrapped command, between
 # verify_fixture_unchanged.cmake's own before/after snapshots -- mutating the
@@ -62,4 +95,4 @@ if( NOT _dirty_output MATCHES "SCENARIO-FAILURE" )
 endif()
 
 file( REMOVE_RECURSE "${_work_dir}" )
-message( STATUS "cpp-test-shim-fixture-digest: 3/3 properties held" )
+message( STATUS "cpp-test-shim-fixture-digest: 5/5 properties held" )

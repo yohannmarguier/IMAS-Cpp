@@ -215,6 +215,12 @@ function( al_cpp_shim_private_fixture_copy test_name source out_var )
   set( ${out_var} "${_dir}" PARENT_SCOPE )
 endfunction()
 
+# F3.1's program has no fixture-generation dependency at compile time. Keep
+# the target available to typecheck in every shim build; registration below is
+# still gated on the tooling that derives its malformed-stamp input.
+add_executable( cpp-test-shim-stamp-malformed test_shim_stamp_malformed.cpp )
+target_link_libraries( cpp-test-shim-stamp-malformed PRIVATE al-cpp )
+
 # Stamp-state variants (docs/SHIM_SUITE_CONVENTION.md S3.3): three fixture
 # states the passthrough and occurrence-open-refusal families (issues #13,
 # #14) read while opening an occurrence, so they must exist before those
@@ -288,5 +294,30 @@ else()
   set_tests_properties( cpp-test-shim-stamp-variants PROPERTIES
     LABELS "shim;harness"
     FAIL_REGULAR_EXPRESSION "STAMP-VARIANT-FAILURE"
+  )
+
+  # F3.1 (docs/SHIM_SUITE_CONVENTION.md S5.3): a present but malformed
+  # DD-version stamp belongs to the occurrence, not its enclosing data entry.
+  # IDS::open therefore forwards, while equilibrium.get reaches the occurrence
+  # open and returns the shim's refusal before any data seam is served.
+  add_dependencies( cpp-test-shim-stamp-malformed cpp-shim-stamp-fixtures )
+
+  # The program verifies every returned public status and the untouched IDS.
+  # Its generated get() prints the frozen reason rather than returning it, so
+  # the read-fixture wrapper checks program success first, then captures the
+  # message from standard output. This is F3.1's named diagnostic exception;
+  # a PASS_REGULAR_EXPRESSION would be unsound because it can accept matching
+  # output from a program that exited unsuccessfully.
+  add_test( NAME cpp-test-shim-stamp-malformed
+    COMMAND ${CMAKE_COMMAND}
+      -D "FIXTURE_ROOT=${AL_SHIM_STAMP_MALFORMED_FIXTURE}"
+      -D "COMMAND_TO_RUN=$<TARGET_FILE:cpp-test-shim-stamp-malformed>;${AL_SHIM_STAMP_MALFORMED_FIXTURE}"
+      -D "EXPECTED_STDOUT_SUBSTRING=malformed DD-version stamp"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_fixture_unchanged.cmake"
+  )
+  set_tests_properties( cpp-test-shim-stamp-malformed PROPERTIES
+    ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT}"
+    LABELS "shim;contract-assertion"
+    FAIL_REGULAR_EXPRESSION "REFUSAL-FAILURE;SCENARIO-FAILURE"
   )
 endif()

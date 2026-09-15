@@ -89,7 +89,12 @@ Three test groups:
   IMAS-Fortran, not generated here — see that directory's README), whose
   provenance and derived stamp-state variants are themselves registered
   tests, gated on a Python venv with `imas-python`/`h5py` and `h5diff` being
-  present.
+  present. `cpp-test-shim-stamp-malformed` is the first contract assertion:
+  it proves a malformed occurrence stamp passes the data-entry open but
+  refuses at `equilibrium.get`, without a skipped path or populated IDS. Its
+  frozen reason is captured from generated `get` standard output only after
+  the executable has verified a refusal-band status and exited cleanly; this
+  is the suite's named external-behaviour exception.
 
 Things that bite:
 - Tests pass/fail on **output pattern matching**, not exit code: `FAIL_REGULAR_EXPRESSION`
