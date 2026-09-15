@@ -130,6 +130,15 @@ Writes are best effort: a refused `putSlice` has no rollback, so prior writes an
 array-of-structures remain on disk. `cpp-test-generated-write-refusal-policy` checks this
 generated-operation contract in ordinary builds, where no real shim refusal is available.
 
+The public contract is documented in `doc/api_ids.rst`: the three-way status of `get`,
+`getSlice`, `getSample`, `put`, `putSlice`, and `partialGet` (`0` success; `>0` completed
+with refused paths; `<0` failure), `getSkippedPaths`/`getSkippedPathCount`, the `SkippedPath`
+record (operation Read/Write/Delete, path relative to the enclosing context, message carrying
+the full DD path, code), the record reset at the start of each root operation, and that
+refused writes are best effort and not rolled back. `doc/api_constants.rst` documents
+`PARTIAL_READ`/`PARTIAL_PUT`. In `tests/generator/helper.cpp`, `checkStatus` treats any
+non-zero status (`status != 0`) as a failure for the whole suite, without printing anything.
+
 Regeneration is driven by a dummy output file (`build/src/dummy.txt`) behind the
 `al-cpp-sources` target, so generation reruns only when a stylesheet or `IDSDef.xml`
 changes — but it then rebuilds the whole (slow) library. `touch`ing a stylesheet is the
