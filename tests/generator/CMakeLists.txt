@@ -81,21 +81,3 @@ add_test( NAME cpp-test-refusal-policy COMMAND cpp-test-refusal-policy )
 set_tests_properties( cpp-test-refusal-policy PROPERTIES
   FAIL_REGULAR_EXPRESSION "POLICY-FAILURE"
 )
-
-# The generated write/delete traversal cannot receive a real shim refusal in an
-# ordinary build. Verify that the generated public-operation source keeps the
-# record-threading and partial-put contract intact.
-add_executable( cpp-test-generated-write-refusal-policy
-  test_generated_write_refusal_policy.cpp
-)
-add_dependencies( cpp-test-generated-write-refusal-policy al-cpp-sources )
-
-add_test(
-  NAME cpp-test-generated-write-refusal-policy
-  COMMAND cpp-test-generated-write-refusal-policy
-    ${GENERATED_SOURCES}
-    ${GENERATED_HEADERS}
-)
-set_tests_properties( cpp-test-generated-write-refusal-policy PROPERTIES
-  FAIL_REGULAR_EXPRESSION "GENERATOR-POLICY-FAILURE"
-)

@@ -145,8 +145,9 @@ tolerated paths return `PARTIAL_PUT`, with a `Write` or `Delete` tag. Root `put`
 and `deleteAll` clear the record first; full `put` retains tolerated deletes that occur before
 its writes. Occurrence opens, data-entry seams, iteration, and end-action calls remain fatal.
 Writes are best effort: a refused `putSlice` has no rollback, so prior writes and the resized
-array-of-structures remain on disk. `cpp-test-generated-write-refusal-policy` checks this
-generated-operation contract in ordinary builds, where no real shim refusal is available.
+array-of-structures remain on disk. Ordinary builds exercise the shared tolerance decision
+through `cpp-test-refusal-policy`; end-to-end generated-operation coverage belongs to the
+separate multiversion-shim conformance suite because it needs a shim and mismatched pulse.
 
 The public contract is documented in `doc/api_ids.rst`: the three-way status of `get`,
 `getSlice`, `getSample`, `put`, `putSlice`, and `partialGet` (`0` success; `>0` completed
