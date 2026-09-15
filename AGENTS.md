@@ -124,6 +124,9 @@ templates with `mode` names that mirror the generated methods: `CLASS_DEFINITION
 `METHOD_PUT` / `PUT_SINGLE`, `METHOD_GET` / `GET_SINGLE`, `METHOD_PUT_SLICE`,
 `METHOD_VALIDATE` and the `VALIDATE_*` family, `RESET`, `DELETE`, `DUMP`,
 `DISCARD_CACHE`. When changing behaviour of a generated method, find the matching mode.
+The named `HANDLE_AOS_OPEN_STATUS` template centralises the shared read/write refusal
+decision emitted after every array-of-structures open; keep branch-specific traversal in
+`GET_SINGLE` and `PUT_SINGLE` rather than duplicating that policy block.
 Both stylesheets take `DD_GIT_DESCRIBE` and `AL_GIT_DESCRIBE` parameters, which end up as
 the `al_dd_version` / `al_cpp_version` constants.
 

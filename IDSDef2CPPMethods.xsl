@@ -2473,6 +2473,18 @@ See IDSDef2Classes.xsl  -->
 <!--       put field       -->
 <!--=================================================-->
 
+<xsl:template name="HANDLE_AOS_OPEN_STATUS">
+<xsl:param name="operation"/>
+<xsl:param name="partialStatus"/>
+			if (IdsNs::Ids::mustAbort(al_status, SkippedPath::Operation::<xsl:value-of select="$operation"/>, fieldPath, skippedPaths, __FILE__, __LINE__, __func__))
+			{
+				al_end_action(ctx);
+				return al_status.code;
+			}
+			if (al_status.code &lt; 0)
+				retStatus = <xsl:value-of select="$partialStatus"/>;
+</xsl:template>
+
 <xsl:template match="field" mode="PUT_SINGLE">
 <xsl:param name="dynamic_only"/>
     <xsl:call-template name="COMMENT_FIELD"/>
@@ -2514,13 +2526,10 @@ See IDSDef2Classes.xsl  -->
 			arraySize = <xsl:value-of select = "@name"/>.extent(0);
 
 				al_status = al_begin_arraystruct_action(ctx, fieldPath.c_str(), timeBasePath.c_str(), &amp;arraySize, &amp;aosCtx);
-				if (IdsNs::Ids::mustAbort(al_status, SkippedPath::Operation::Write, fieldPath, skippedPaths, __FILE__, __LINE__, __func__))
-				{	
-					al_end_action(ctx);
-					return al_status.code; 
-				}
-				if (al_status.code &lt; 0)
-					retStatus = PARTIAL_PUT;
+			<xsl:call-template name="HANDLE_AOS_OPEN_STATUS">
+				<xsl:with-param name="operation" select="'Write'"/>
+				<xsl:with-param name="partialStatus" select="'PARTIAL_PUT'"/>
+			</xsl:call-template>
 				else
 				{
 					if(aosCtx&gt;0 &amp;&amp; arraySize&gt;0 &amp;&amp; <xsl:value-of select="@name"/>.size() == 0)
@@ -2570,13 +2579,10 @@ See IDSDef2Classes.xsl  -->
 			arraySize = <xsl:value-of select = "@name"/>.extent(0);
 
 				al_status = al_begin_arraystruct_action(ctx, fieldPath.c_str(), timeBasePath.c_str(), &amp;arraySize, &amp;aosCtx);
-				if (IdsNs::Ids::mustAbort(al_status, SkippedPath::Operation::Write, fieldPath, skippedPaths, __FILE__, __LINE__, __func__))
-				{	
-					al_end_action(ctx);
-					return al_status.code;
-				}
-				if (al_status.code &lt; 0)
-					retStatus = PARTIAL_PUT;
+			<xsl:call-template name="HANDLE_AOS_OPEN_STATUS">
+				<xsl:with-param name="operation" select="'Write'"/>
+				<xsl:with-param name="partialStatus" select="'PARTIAL_PUT'"/>
+			</xsl:call-template>
 				else
 				{
 					if(aosCtx&gt;0 &amp;&amp; arraySize&gt;0 &amp;&amp; <xsl:value-of select="@name"/>.size() == 0)
@@ -2632,13 +2638,10 @@ See IDSDef2Classes.xsl  -->
 			if(idsTimeMode != IDS_TIME_MODE_INDEPENDENT)
 			{	
 				al_status = al_begin_arraystruct_action(ctx, fieldPath.c_str(), timeBasePath.c_str(), &amp;arraySize, &amp;aosCtx);
-				if (IdsNs::Ids::mustAbort(al_status, SkippedPath::Operation::Write, fieldPath, skippedPaths, __FILE__, __LINE__, __func__))
-				{	
-					al_end_action(ctx);
-					return al_status.code;
-				}
-				if (al_status.code &lt; 0)
-					retStatus = PARTIAL_PUT;
+			<xsl:call-template name="HANDLE_AOS_OPEN_STATUS">
+				<xsl:with-param name="operation" select="'Write'"/>
+				<xsl:with-param name="partialStatus" select="'PARTIAL_PUT'"/>
+			</xsl:call-template>
 				else
 				{
 					if(aosCtx&gt;0 &amp;&amp; arraySize&gt;0 &amp;&amp; <xsl:value-of select="@name"/>.size() == 0)
@@ -2777,16 +2780,10 @@ See IDSDef2Classes.xsl  -->
 			</xsl:choose>
 			timeBasePath = "";
 			al_status = al_begin_arraystruct_action(ctx, fieldPath.c_str(), timeBasePath.c_str(), &amp;arraySize, &amp;aosCtx);
-			if (IdsNs::Ids::mustAbort(al_status, SkippedPath::Operation::Read, fieldPath, skippedPaths, __FILE__, __LINE__, __func__))
-			{	
-				al_end_action(ctx);
-				return al_status.code;
-			}
-
-			if (al_status.code &lt; 0)
-			{
-				retStatus = PARTIAL_READ;
-			}
+			<xsl:call-template name="HANDLE_AOS_OPEN_STATUS">
+				<xsl:with-param name="operation" select="'Read'"/>
+				<xsl:with-param name="partialStatus" select="'PARTIAL_READ'"/>
+			</xsl:call-template>
 			else if(aosCtx > 0 &amp;&amp; arraySize > 0)
 			{	
 				<xsl:value-of select="@name"/>.resize(arraySize);
@@ -2829,16 +2826,10 @@ See IDSDef2Classes.xsl  -->
 			</xsl:choose>
 			timeBasePath = "";
 			al_status = al_begin_arraystruct_action(ctx, fieldPath.c_str(), timeBasePath.c_str(), &amp;arraySize, &amp;aosCtx);
-			if (IdsNs::Ids::mustAbort(al_status, SkippedPath::Operation::Read, fieldPath, skippedPaths, __FILE__, __LINE__, __func__))
-			{	
-					al_end_action(ctx);
-                    return al_status.code;
-			}
-
-			if (al_status.code &lt; 0)
-			{
-				retStatus = PARTIAL_READ;
-			}
+			<xsl:call-template name="HANDLE_AOS_OPEN_STATUS">
+				<xsl:with-param name="operation" select="'Read'"/>
+				<xsl:with-param name="partialStatus" select="'PARTIAL_READ'"/>
+			</xsl:call-template>
 			else if(aosCtx > 0 &amp;&amp; arraySize > 0)
 			{	
 				<xsl:value-of select="@name"/>.resize(arraySize);
@@ -2888,16 +2879,10 @@ See IDSDef2Classes.xsl  -->
   				</xsl:otherwise>
 			</xsl:choose>
 			al_status = al_begin_arraystruct_action(ctx, fieldPath.c_str(), timeBasePath.c_str(), &amp;arraySize, &amp;aosCtx);
-			if (IdsNs::Ids::mustAbort(al_status, SkippedPath::Operation::Read, fieldPath, skippedPaths, __FILE__, __LINE__, __func__))
-			{	
-				al_end_action(ctx);
-                return al_status.code;
-			}
-
-			if (al_status.code &lt; 0)
-			{
-				retStatus = PARTIAL_READ;
-			}
+			<xsl:call-template name="HANDLE_AOS_OPEN_STATUS">
+				<xsl:with-param name="operation" select="'Read'"/>
+				<xsl:with-param name="partialStatus" select="'PARTIAL_READ'"/>
+			</xsl:call-template>
 			else if(aosCtx > 0 )
 			{	
                 if(arraySize > 0)
