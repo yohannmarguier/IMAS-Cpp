@@ -5,7 +5,7 @@ This directory holds the Tier-1 shim conformance suite described in
 `AL_USE_MULTIVERSION_SHIM=ON`; with shim mode off the registered test list is
 exactly what it was before this suite existed.
 
-## Scope so far (issues #10, #11, #12)
+## Scope so far (issues #10, #11, #12, #13)
 
 Issue #10 registered the suite's scaffold and its first test.
 Issue #11 added the shared comparison oracle every fixture-driven family
@@ -76,6 +76,17 @@ read scenario each need:
   fixture it read is unchanged afterwards -- content, not mtime, because an
   HDF5 rewrite can leave both alone. The self-test exercises it against a
   synthetic directory too.
+- `cpp-test-shim-version-unset`, `cpp-test-shim-stamp-equal`,
+  `cpp-test-shim-stamp-absent`, and
+  `cpp-test-shim-stamp-mismatch-no-artifact` (F2.1--F2.4,
+  `contract-assertion`): four separately launched HDF5 reads covering every
+  state in which the shim must forward untouched. Each proves clean success,
+  no skipped paths, fixture data, an unchanged fixture, and an empty private
+  loss-log directory. The version-unset registration composes an environment
+  without `IMAS_MVDD_HLI_DD_VERSION`; it does not clear an injected value. The
+  mismatch-without-artifact scenario also checks that the newer-DD-only
+  `beta_tor_norm` remains absent, and its source header records why its
+  otherwise indistinguishable result must remain a separate scenario.
 
 None of `cpp-test-shim-linkage`, `cpp-test-shim-run-guard`, the comparator
 tests, or the fixture/stamp-variant tests above call into the shim's runtime
@@ -102,10 +113,11 @@ ctest --test-dir <shim-build> -L shim --output-on-failure
 ctest --test-dir <shim-build> -L harness --output-on-failure
 ```
 
-`contract-assertion` and `behaviour-pin` tests do not exist here yet; when
-they land, they follow `docs/SHIM_SUITE_CONVENTION.md` S1 D5: a
-`contract-assertion` stays red while the shim disagrees and is never
-inverted, quarantined, or softened to match observed behaviour.
+The four F2 `contract-assertion` tests follow
+`docs/SHIM_SUITE_CONVENTION.md` S1 D5: a `contract-assertion` stays red while
+the shim disagrees and is never inverted, quarantined, or softened to match
+observed behaviour. Other contract-assertion and behaviour-pin families do
+not exist here yet.
 
 This suite is not wired into CI. Wiring it in is a decision to take
 explicitly, once there is a red list to publish (S1 D5) and a loaded

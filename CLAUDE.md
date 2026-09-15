@@ -89,7 +89,14 @@ Three test groups:
   IMAS-Fortran, not generated here — see that directory's README), whose
   provenance and derived stamp-state variants are themselves registered
   tests, gated on a Python venv with `imas-python`/`h5py` and `h5diff` being
-  present.
+  present. The four `cpp-test-shim-{version-unset,stamp-equal,stamp-absent,
+  stamp-mismatch-no-artifact}` tests are contract assertions: each reads a
+  private HDF5 fixture in its own process, requires clean success and no
+  skipped paths, leaves the fixture unchanged, and proves its loss-log
+  directory stayed empty. The unset-version registration composes an
+  environment that omits `IMAS_MVDD_HLI_DD_VERSION`; it never clears a value
+  injected by the build. The older and no-artifact mismatch scenarios also
+  require the newer-only `beta_tor_norm` field to remain unset.
 
 Things that bite:
 - Tests pass/fail on **output pattern matching**, not exit code: `FAIL_REGULAR_EXPRESSION`
