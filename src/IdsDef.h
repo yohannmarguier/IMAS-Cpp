@@ -105,9 +105,9 @@ class Ids
 
         // The refusal-tolerance chokepoint: decides whether a non-zero status at
         // one field must abort the operation, tolerating only the refusal band.
-        // Takes the record by reference, rather than acting on `this`, because a
-        // nested structure class (not derived from Ids) will need to call this
-        // too; nothing does yet, that is the next ticket.
+        // Takes the record by reference, rather than acting on `this`, because
+        // generated nested structure classes do not derive from Ids but route
+        // their root IDS object's record through this chokepoint.
         static bool mustAbort(al_status_t al_status, SkippedPath::Operation operation,
                                const std::string &fieldPath, std::vector<SkippedPath> &skippedPaths,
                                const char *file, const unsigned long line, const char *func);

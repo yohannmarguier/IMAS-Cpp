@@ -23,7 +23,7 @@
 // const accessors, so the base class's storage is what gets exercised rather
 // than a free-standing vector.
 
-#include "IdsDef.h"
+#include "ids/core_instant_changes_IDSBase.h"
 
 #include <cstdio>
 #include <cstring>
@@ -52,33 +52,16 @@ al_status_t makeStatus(int code, const char *message = "")
     return status;
 }
 
-// Gives the test access to the protected chokepoint and record, exactly as a
-// generated IDS class would have them.
-class PolicyUnderTest : public IdsNs::Ids
+// Gives the test access to the protected chokepoint and record through a real
+// generated IDS base, without faking the rest of the abstract IDS contract.
+class PolicyUnderTest : public IdsNs::core_instant_changes_IDSBase
 {
     public:
-        // Unused pure virtuals from IdsNs::Ids: this class exists only to
-        // reach the protected members, never to be used as an IDS.
-        int get() override { return 0; }
-        int get(int) override { return 0; }
-        int getSample(double, double, const std::vector<double> &, int) override { return 0; }
-        int getSample(int, double, double, const std::vector<double> &, int) override { return 0; }
-        int partialGet(const std::string &, const std::string &, bool) override { return 0; }
-        int partialGet(int, const std::string &, const std::string &, bool) override { return 0; }
-        int put() override { return 0; }
-        int put(int) override { return 0; }
-        int getSlice(double, char) override { return 0; }
-        int getSlice(int, double, char) override { return 0; }
-        int putSlice() override { return 0; }
-        int putSlice(int) override { return 0; }
-        int deleteAll() override { return 0; }
-        int deleteAll(int) override { return 0; }
-        void clear() override {}
-        bool isDefined() override { return false; }
-
-        bool critical(int code, const std::string &path, SkippedPath::Operation operation)
+        bool critical(int code, const std::string &path, SkippedPath::Operation operation,
+                      const char *message = "")
         {
-            return mustAbort(makeStatus(code), operation, path, skippedPaths, __FILE__, __LINE__, __func__);
+            return mustAbort(makeStatus(code, message), operation, path, skippedPaths,
+                             __FILE__, __LINE__, __func__);
         }
 
         void reset() { resetSkippedPaths(); }
@@ -105,14 +88,18 @@ int main()
 
     // A refusal is tolerated, and recorded through the base class's own
     // record, for each operation tag.
+    const char *refusalMessage =
+        "IMAS-MVDD: refused equilibrium/grids_ggd/grid/space/coordinates_type";
     expect(!ids.critical(IdsNs::AL_REFUSAL_BAND_MAX, "grids_ggd/grid/space/coordinates_type",
-                         SkippedPath::Operation::Read),
+                         SkippedPath::Operation::Read, refusalMessage),
            "a conversion refusal must not be critical (read)");
     expect(ids.getSkippedPathCount() == 1, "a tolerated read refusal must be logged");
     expect(ids.getSkippedPaths().back().operation == SkippedPath::Operation::Read, "the logged operation must be Read");
     expect(ids.getSkippedPaths().back().path == "grids_ggd/grid/space/coordinates_type",
            "the logged path must be the refused one");
     expect(ids.getSkippedPaths().back().code == IdsNs::AL_REFUSAL_BAND_MAX, "the logged code must be the refusal status");
+    expect(ids.getSkippedPaths().back().message == refusalMessage,
+           "the logged message must preserve the shim refusal message");
 
     expect(!ids.critical(IdsNs::AL_REFUSAL_BAND_MAX, "x/y", SkippedPath::Operation::Write),
            "a conversion refusal must not be critical (write)");
@@ -128,6 +115,8 @@ int main()
     // today (IMAS_MVDD_CONVERSION_ERROR == AL_REFUSAL_BAND_MAX).
     expect(!ids.critical(IdsNs::AL_REFUSAL_BAND_MIN, "x/y", SkippedPath::Operation::Read),
            "the far end of the reserved band must not be critical");
+    expect(!ids.critical(-1050, "x/y", SkippedPath::Operation::Read),
+           "an interior value in the reserved band must not be critical");
 
     // Just outside the band, both sides, is fatal again.
     expect(ids.critical(IdsNs::AL_REFUSAL_BAND_MAX + 1, "x/y", SkippedPath::Operation::Read),
@@ -137,7 +126,8 @@ int main()
 
     // Cleared at the start of a root operation, so the record describes one
     // operation rather than accumulating across calls.
-    expect(ids.getSkippedPathCount() == 4, "the two boundary refusals plus the earlier three must all be counted");
+    expect(ids.getSkippedPathCount() == 5,
+           "the refusal-band boundaries, one interior refusal and all operation tags must be counted");
     ids.reset();
     expect(ids.getSkippedPaths().empty(), "reset must empty the record");
     expect(ids.getSkippedPathCount() == 0, "count and entries must agree after reset");

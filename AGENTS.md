@@ -129,7 +129,9 @@ the root IDS object's skipped-path record through every nested `get` call and re
 end-action calls, and readback-plugin bind/unbind remain fatal `isError` sites. Root `get`,
 `getSample`, and `getSlice` clear the record before starting their traversal. `partialGet`
 also clears it on entry, before plugin setup can fail, and its delegated `get` clears it
-again before traversal.
+again before traversal. The direct refusal-policy test uses a generated concrete IDS base
+as its narrow protected-member adapter and covers the refusal-band boundaries, an interior
+value, operation tags, and preservation of the shim message.
 
 Write/delete refusal policy is generated in `PUT_SINGLE` and `DELETE`: only leaf `writeData` /
 `al_delete_data` calls and the failure arm of `al_begin_arraystruct_action` call
