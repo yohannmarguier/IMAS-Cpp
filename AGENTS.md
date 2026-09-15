@@ -1,4 +1,4 @@
-Any changes should be also refelcted in AGENTS.md
+Any changes should be also refelcted in CLAUDE.md
 
 ## What this repository is
 

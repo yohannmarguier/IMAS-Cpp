@@ -124,8 +124,43 @@ templates with `mode` names that mirror the generated methods: `CLASS_DEFINITION
 `METHOD_PUT` / `PUT_SINGLE`, `METHOD_GET` / `GET_SINGLE`, `METHOD_PUT_SLICE`,
 `METHOD_VALIDATE` and the `VALIDATE_*` family, `RESET`, `DELETE`, `DUMP`,
 `DISCARD_CACHE`. When changing behaviour of a generated method, find the matching mode.
+The named `HANDLE_AOS_OPEN_STATUS` template centralises the shared read/write refusal
+decision emitted after every array-of-structures open; keep branch-specific traversal in
+`GET_SINGLE` and `PUT_SINGLE` rather than duplicating that policy block.
 Both stylesheets take `DD_GIT_DESCRIBE` and `AL_GIT_DESCRIBE` parameters, which end up as
 the `al_dd_version` / `al_cpp_version` constants.
+
+Read traversal refusal policy is generated in `GET_SINGLE`: only leaf `readData` calls and
+the failure arm of `al_begin_arraystruct_action` call `Ids::mustAbort`. Those sites thread
+the root IDS object's skipped-path record through every nested `get` call and return
+`PARTIAL_READ` after a tolerated refusal. Time-mode reads, occurrence opens, iteration and
+end-action calls, and readback-plugin bind/unbind remain fatal `isError` sites. Root `get`,
+`getSample`, and `getSlice` clear the record before starting their traversal. `partialGet`
+also clears it on entry, before plugin setup can fail, and its delegated `get` clears it
+again before traversal. The direct refusal-policy test uses a generated concrete IDS base
+as its narrow protected-member adapter and covers the refusal-band boundaries, an interior
+value, operation tags, and preservation of the shim message.
+
+Write/delete refusal policy is generated in `PUT_SINGLE` and `DELETE`: only leaf `writeData` /
+`al_delete_data` calls and the failure arm of `al_begin_arraystruct_action` call
+`Ids::mustAbort`. Nested `put`, `putSlice`, and `deleteAll` methods carry the root record;
+tolerated paths return `PARTIAL_PUT`, with a `Write` or `Delete` tag. Root `put`, `putSlice`,
+and `deleteAll` clear the record first; full `put` retains tolerated deletes that occur before
+its writes. Occurrence opens, data-entry seams, iteration, and end-action calls remain fatal.
+Writes are best effort: a refused `putSlice` has no rollback, so prior writes and the resized
+array-of-structures remain on disk. Ordinary builds exercise the shared tolerance decision
+through `cpp-test-refusal-policy`; `cpp-test-generated-write-refusal-policy` temporarily
+checks generated write/delete wiring until the multiversion-shim conformance suite provides
+equivalent executable coverage with a shim and mismatched pulse.
+
+The public contract is documented in `doc/api_ids.rst`: the three-way status of `get`,
+`getSlice`, `getSample`, `put`, `putSlice`, and `partialGet` (`0` success; `>0` completed
+with refused paths; `<0` failure), `getSkippedPaths`/`getSkippedPathCount`, the `SkippedPath`
+record (operation Read/Write/Delete, path relative to the enclosing context, message carrying
+the full DD path, code), the record reset at the start of each root operation, and that
+refused writes are best effort and not rolled back. `doc/api_constants.rst` documents
+`PARTIAL_READ`/`PARTIAL_PUT`. In `tests/generator/helper.cpp`, `checkStatus` treats any
+non-zero status (`status != 0`) as a failure for the whole suite, without printing anything.
 
 Regeneration is driven by a dummy output file (`build/src/dummy.txt`) behind the
 `al-cpp-sources` target, so generation reruns only when a stylesheet or `IDSDef.xml`
@@ -185,4 +220,3 @@ Default label vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `read
 ### Domain docs
 
 Single-context layout — `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
-
