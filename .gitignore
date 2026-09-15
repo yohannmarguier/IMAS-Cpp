@@ -12,3 +12,4 @@ gen_h_files
 CMakeUserPresets.json
 /graphify-out
 /.idea
+/.claude
