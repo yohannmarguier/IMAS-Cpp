@@ -149,8 +149,9 @@ and `deleteAll` clear the record first; full `put` retains tolerated deletes tha
 its writes. Occurrence opens, data-entry seams, iteration, and end-action calls remain fatal.
 Writes are best effort: a refused `putSlice` has no rollback, so prior writes and the resized
 array-of-structures remain on disk. Ordinary builds exercise the shared tolerance decision
-through `cpp-test-refusal-policy`; end-to-end generated-operation coverage belongs to the
-separate multiversion-shim conformance suite because it needs a shim and mismatched pulse.
+through `cpp-test-refusal-policy`; `cpp-test-generated-write-refusal-policy` temporarily
+checks generated write/delete wiring until the multiversion-shim conformance suite provides
+equivalent executable coverage with a shim and mismatched pulse.
 
 The public contract is documented in `doc/api_ids.rst`: the three-way status of `get`,
 `getSlice`, `getSample`, `put`, `putSlice`, and `partialGet` (`0` success; `>0` completed
