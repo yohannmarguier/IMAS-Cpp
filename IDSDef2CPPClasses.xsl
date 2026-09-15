@@ -287,15 +287,15 @@ LIBRARY_API ostream <xsl:text disable-output-escaping = "yes">&amp;</xsl:text>op
 		    <xsl:apply-templates select = "field" mode = "CONSTRUCTOR"/>
 		  };
     int get(int ctx, int idsTimeMode, std::vector&lt;SkippedPath&gt; &amp;skippedPaths);
-    int put(int ctx, int idsTimeMode, const std::string &amp;idsFullName);
+    int put(int ctx, int idsTimeMode, const std::string &amp;idsFullName, std::vector&lt;SkippedPath&gt; &amp;skippedPaths);
     <xsl:if test="descendant-or-self::field[@type='dynamic'] or ancestor::field[@type='dynamic' and @data_type='struct_array']">
-    int putSlice(int ctx, int idsTimeMode, const std::string &amp;idsFullName);
+    int putSlice(int ctx, int idsTimeMode, const std::string &amp;idsFullName, std::vector&lt;SkippedPath&gt; &amp;skippedPaths);
      </xsl:if> 
 
     void validate(int idsTimeMode, int idsTimeSize) const;
 
     <xsl:if test="not(ancestor::field[@data_type='struct_array'])">
-    int deleteAll(int ctx);
+    int deleteAll(int ctx, std::vector&lt;SkippedPath&gt; &amp;skippedPaths);
      </xsl:if> 
     void clear();
 
@@ -310,10 +310,10 @@ LIBRARY_API ostream <xsl:text disable-output-escaping = "yes">&amp;</xsl:text>op
 		<xsl:apply-templates select = "field" mode = "CONSTRUCTOR"/>
 		  };
     int get(int ctx, int idsTimeMode, std::vector&lt;SkippedPath&gt; &amp;skippedPaths);
-    int put(int ctx, int idsTimeMode, const std::string &amp;idsFullName);
+    int put(int ctx, int idsTimeMode, const std::string &amp;idsFullName, std::vector&lt;SkippedPath&gt; &amp;skippedPaths);
     void clear();
     <xsl:if test="descendant-or-self::field[@type='dynamic'] or ancestor::field[@type='dynamic' and @data_type='struct_array']">
-    int putSlice(int ctx, int idsTimeMode, const std::string &amp;idsFullName);
+    int putSlice(int ctx, int idsTimeMode, const std::string &amp;idsFullName, std::vector&lt;SkippedPath&gt; &amp;skippedPaths);
     </xsl:if> 
 
     void validate(int idsTimeMode, int idsTimeSize) const;

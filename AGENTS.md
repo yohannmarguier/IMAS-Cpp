@@ -120,6 +120,16 @@ the root IDS object's skipped-path record through every nested `get` call and re
 end-action calls, and readback-plugin bind/unbind remain fatal `isError` sites. Root `get`,
 `getSample`, and `getSlice` clear the record before starting their traversal.
 
+Write/delete refusal policy is generated in `PUT_SINGLE` and `DELETE`: only leaf `writeData` /
+`al_delete_data` calls and the failure arm of `al_begin_arraystruct_action` call
+`Ids::mustAbort`. Nested `put`, `putSlice`, and `deleteAll` methods carry the root record;
+tolerated paths return `PARTIAL_PUT`, with a `Write` or `Delete` tag. Root `put`, `putSlice`,
+and `deleteAll` clear the record first; full `put` retains tolerated deletes that occur before
+its writes. Occurrence opens, data-entry seams, iteration, and end-action calls remain fatal.
+Writes are best effort: a refused `putSlice` has no rollback, so prior writes and the resized
+array-of-structures remain on disk. `cpp-test-generated-write-refusal-policy` checks this
+generated-operation contract in ordinary builds, where no real shim refusal is available.
+
 Regeneration is driven by a dummy output file (`build/src/dummy.txt`) behind the
 `al-cpp-sources` target, so generation reruns only when a stylesheet or `IDSDef.xml`
 changes — but it then rebuilds the whole (slow) library. `touch`ing a stylesheet is the

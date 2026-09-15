@@ -548,6 +548,8 @@ int IdsNs::<xsl:value-of select="@name"/>_IDSBase::put(int iOccurrence)
 	int idsTimeMode = IDS_TIME_MODE_UNKNOWN;
 	int arraySize;
 
+    resetSkippedPaths();
+
 	if (!connected)
 		return -1;
 
@@ -579,7 +581,11 @@ int IdsNs::<xsl:value-of select="@name"/>_IDSBase::put(int iOccurrence)
     }
     </xsl:if>
 	
-	deleteAll(iOccurrence);
+	status = deleteAll(iOccurrence);
+	if (status &lt; 0)
+		return status;
+	if (status &gt; 0)
+		retStatus = PARTIAL_PUT;
 
 	// Open put context
 	al_status = al_begin_global_action(pulseCtx, idsFullName.c_str(), "", WRITE_OP, &amp;putOpCtx);
@@ -600,7 +606,9 @@ int IdsNs::<xsl:value-of select="@name"/>_IDSBase::put(int iOccurrence)
         printf("PUT: error calling al_write_plugins_metadata for %s IDS: %s\n", idsFullName.c_str(), al_status.message);
                 return al_status.code;
         }
-	al_end_action(putOpCtx);
+	al_status = al_end_action(putOpCtx);
+	if (IdsNs::Ids::isError(al_status, __FILE__, __LINE__, __func__))
+		return al_status.code;
 	
 	return retStatus;
 }
@@ -626,6 +634,8 @@ int IdsNs::<xsl:value-of select="@name"/>_IDSBase::putSlice(int iOccurrence)
 	int idsTimeMode = IDS_TIME_MODE_UNKNOWN;
 	int arraySize;
     int storedTimeMode = IDS_TIME_MODE_UNKNOWN;
+
+    resetSkippedPaths();
 
 	if(!connected)
 		return -1;
@@ -704,7 +714,9 @@ int IdsNs::<xsl:value-of select="@name"/>_IDSBase::putSlice(int iOccurrence)
         printf("PUT_SLICE: error calling al_write_plugins_metadata for %s IDS: %s\n", idsFullName.c_str(), al_status.message);
                 return al_status.code;
         }
-        al_end_action(putSliceOpCtx);
+		al_status = al_end_action(putSliceOpCtx);
+		if (IdsNs::Ids::isError(al_status, __FILE__, __LINE__, __func__))
+			return al_status.code;
 	return retStatus;
 }
 
@@ -875,6 +887,8 @@ int IdsNs::<xsl:value-of select="@name"/>_IDSBase::deleteAll(int iOccurrence)
 	std::string fieldPath;
 	int arraySize;
 
+    resetSkippedPaths();
+
 	if(!connected)
 		return -1;
         
@@ -893,7 +907,9 @@ int IdsNs::<xsl:value-of select="@name"/>_IDSBase::deleteAll(int iOccurrence)
 
 	<xsl:apply-templates select="field" mode="DELETE"/>
 
-	al_end_action(ctx);
+	al_status = al_end_action(ctx);
+	if (IdsNs::Ids::isError(al_status, __FILE__, __LINE__, __func__))
+		return al_status.code;
 	
 	return retStatus;
 }
@@ -2133,7 +2149,7 @@ or @data_type='cpx_1d_type' or @data_type='CPX_1D' or @data_type='STR_1D') and c
 <xsl:template match="field[@data_type='struct_array' or @data_type='structure']" mode="METHOD_PUT">
      <xsl:text>&#xA;&#xA;</xsl:text>
     <xsl:call-template name="COMMENT_FIELD"/>
-    <xsl:text> int IdsNs::</xsl:text> <xsl:value-of select="ancestor::IDS/@name"/>_IDSBase::<xsl:value-of select="fn:replace(@path,'/','::')"/><xsl:text>::put(int ctx, int idsTimeMode, const std::string &amp;idsFullName)&#xA;</xsl:text>
+    <xsl:text> int IdsNs::</xsl:text> <xsl:value-of select="ancestor::IDS/@name"/>_IDSBase::<xsl:value-of select="fn:replace(@path,'/','::')"/><xsl:text>::put(int ctx, int idsTimeMode, const std::string &amp;idsFullName, std::vector&lt;SkippedPath&gt; &amp;skippedPaths)&#xA;</xsl:text>
 {
 	int status = -1;
 	int retStatus = 0;
@@ -2157,7 +2173,7 @@ or @data_type='cpx_1d_type' or @data_type='CPX_1D' or @data_type='STR_1D') and c
 <xsl:if test="descendant-or-self::field[@type='dynamic'] or ancestor::field[@type='dynamic' and @data_type='struct_array']">
      <xsl:text>&#xA;&#xA;</xsl:text>
     <xsl:call-template name="COMMENT_FIELD"/>
-    <xsl:text> int IdsNs::</xsl:text> <xsl:value-of select="ancestor::IDS/@name"/>_IDSBase::<xsl:value-of select="fn:replace(@path,'/','::')"/><xsl:text>::putSlice(int ctx, int idsTimeMode, const std::string &amp;idsFullName)&#xA;</xsl:text>
+    <xsl:text> int IdsNs::</xsl:text> <xsl:value-of select="ancestor::IDS/@name"/>_IDSBase::<xsl:value-of select="fn:replace(@path,'/','::')"/><xsl:text>::putSlice(int ctx, int idsTimeMode, const std::string &amp;idsFullName, std::vector&lt;SkippedPath&gt; &amp;skippedPaths)&#xA;</xsl:text>
 {
 	int status = -1;
 	int retStatus = 0;
@@ -2201,7 +2217,7 @@ or @data_type='cpx_1d_type' or @data_type='CPX_1D' or @data_type='STR_1D') and c
 <xsl:if test="not(ancestor::field[@data_type='struct_array'])">
      <xsl:text>&#xA;&#xA;</xsl:text>
     <xsl:call-template name="COMMENT_FIELD"/>
-<xsl:text> int IdsNs::</xsl:text> <xsl:value-of select="ancestor::IDS/@name"/>_IDSBase::<xsl:value-of select="fn:replace(@path,'/','::')"/><xsl:text>::deleteAll(int ctx)&#xA;</xsl:text>
+<xsl:text> int IdsNs::</xsl:text> <xsl:value-of select="ancestor::IDS/@name"/>_IDSBase::<xsl:value-of select="fn:replace(@path,'/','::')"/><xsl:text>::deleteAll(int ctx, std::vector&lt;SkippedPath&gt; &amp;skippedPaths)&#xA;</xsl:text>
 {
 	int status = -1;
 	int retStatus = 0;
@@ -2258,7 +2274,7 @@ See IDSDef2Classes.xsl  -->
 	<xsl:call-template name="COMMENT_FIELD"/>
 	<xsl:choose>
 		<xsl:when test="@data_type='structure'">
-			status = <xsl:value-of select="@name"/>.deleteAll(ctx);
+			status = <xsl:value-of select="@name"/>.deleteAll(ctx, skippedPaths);
 			if (status &gt; 0)
 				retStatus = status;
 			if (status &lt; 0)
@@ -2267,11 +2283,13 @@ See IDSDef2Classes.xsl  -->
 		<xsl:otherwise>
 			fieldPath = "<xsl:value-of select="@path"/>";
 			al_status = al_delete_data(ctx, fieldPath.c_str());
-			if (al_status.code != 0)
+			if (IdsNs::Ids::mustAbort(al_status, SkippedPath::Operation::Delete, fieldPath, skippedPaths, __FILE__, __LINE__, __func__))
 			{	
 				al_end_action(ctx);
 				return al_status.code; 
 			}
+			if (al_status.code &lt; 0)
+				retStatus = PARTIAL_PUT;
 		</xsl:otherwise>
 	</xsl:choose>
 </xsl:template>
@@ -2466,7 +2484,7 @@ See IDSDef2Classes.xsl  -->
 <!--========== Regular structures ==========-->
     <!-- YB 2014 -->
 		<xsl:when test="@data_type='structure'">
-          status = <xsl:value-of select="@name"/>.<xsl:value-of select="$methodName"/>(ctx, idsTimeMode, idsFullName);
+          status = <xsl:value-of select="@name"/>.<xsl:value-of select="$methodName"/>(ctx, idsTimeMode, idsFullName, skippedPaths);
           if (status &gt; 0)
           	retStatus = status;
 		  if (status &lt; 0)
@@ -2488,17 +2506,20 @@ See IDSDef2Classes.xsl  -->
 			arraySize = <xsl:value-of select = "@name"/>.extent(0);
 
 				al_status = al_begin_arraystruct_action(ctx, fieldPath.c_str(), timeBasePath.c_str(), &amp;arraySize, &amp;aosCtx);
-				if (IdsNs::Ids::isError(al_status, __FILE__, __LINE__, __func__))
+				if (IdsNs::Ids::mustAbort(al_status, SkippedPath::Operation::Write, fieldPath, skippedPaths, __FILE__, __LINE__, __func__))
 				{	
 					al_end_action(ctx);
 					return al_status.code; 
 				}
-
-				if(aosCtx&gt;0 &amp;&amp; arraySize&gt;0 &amp;&amp; <xsl:value-of select="@name"/>.size() == 0)
-					<xsl:value-of select="@name"/>.resize(arraySize);
+				if (al_status.code &lt; 0)
+					retStatus = PARTIAL_PUT;
+				else
+				{
+					if(aosCtx&gt;0 &amp;&amp; arraySize&gt;0 &amp;&amp; <xsl:value-of select="@name"/>.size() == 0)
+						<xsl:value-of select="@name"/>.resize(arraySize);
 
 				for( int i = 0; i &lt;arraySize; i++){
-                    status = <xsl:value-of select="@name"/>(i).<xsl:value-of select="$methodName"/>(aosCtx, idsTimeMode, idsFullName);
+                    status = <xsl:value-of select="@name"/>(i).<xsl:value-of select="$methodName"/>(aosCtx, idsTimeMode, idsFullName, skippedPaths);
                     if (status &gt; 0)
                     	retStatus = status;
 					if (status &lt; 0)
@@ -2520,6 +2541,7 @@ See IDSDef2Classes.xsl  -->
 					al_end_action(ctx);
 					return al_status.code; 
 				}
+				}
 			
 		</xsl:when>
  		<xsl:when  test="@data_type='struct_array' and @maxoccur='unbounded' and (@type!='dynamic' or not(@type))">
@@ -2540,17 +2562,20 @@ See IDSDef2Classes.xsl  -->
 			arraySize = <xsl:value-of select = "@name"/>.extent(0);
 
 				al_status = al_begin_arraystruct_action(ctx, fieldPath.c_str(), timeBasePath.c_str(), &amp;arraySize, &amp;aosCtx);
-				if (IdsNs::Ids::isError(al_status, __FILE__, __LINE__, __func__)) 
+				if (IdsNs::Ids::mustAbort(al_status, SkippedPath::Operation::Write, fieldPath, skippedPaths, __FILE__, __LINE__, __func__))
 				{	
 					al_end_action(ctx);
 					return al_status.code;
 				}
-
-				if(aosCtx&gt;0 &amp;&amp; arraySize&gt;0 &amp;&amp; <xsl:value-of select="@name"/>.size() == 0)
-					<xsl:value-of select="@name"/>.resize(arraySize);
+				if (al_status.code &lt; 0)
+					retStatus = PARTIAL_PUT;
+				else
+				{
+					if(aosCtx&gt;0 &amp;&amp; arraySize&gt;0 &amp;&amp; <xsl:value-of select="@name"/>.size() == 0)
+						<xsl:value-of select="@name"/>.resize(arraySize);
 
 				for( int i = 0; i &lt;arraySize; i++){
-                    status = <xsl:value-of select="@name"/>(i).<xsl:value-of select="$methodName"/>(aosCtx, idsTimeMode, idsFullName);
+                    status = <xsl:value-of select="@name"/>(i).<xsl:value-of select="$methodName"/>(aosCtx, idsTimeMode, idsFullName, skippedPaths);
                     if (status &gt; 0)
                     	retStatus = status;
                     if (status &lt; 0)
@@ -2571,6 +2596,7 @@ See IDSDef2Classes.xsl  -->
 				{	
 					al_end_action(ctx);
 					return al_status.code; 
+				}
 				}
 		</xsl:when>
 		<xsl:when test="@data_type='struct_array' and @maxoccur='unbounded' and @type='dynamic'">
@@ -2598,17 +2624,20 @@ See IDSDef2Classes.xsl  -->
 			if(idsTimeMode != IDS_TIME_MODE_INDEPENDENT)
 			{	
 				al_status = al_begin_arraystruct_action(ctx, fieldPath.c_str(), timeBasePath.c_str(), &amp;arraySize, &amp;aosCtx);
-				if (IdsNs::Ids::isError(al_status, __FILE__, __LINE__, __func__))  
+				if (IdsNs::Ids::mustAbort(al_status, SkippedPath::Operation::Write, fieldPath, skippedPaths, __FILE__, __LINE__, __func__))
 				{	
 					al_end_action(ctx);
 					return al_status.code;
 				}
-
-				if(aosCtx&gt;0 &amp;&amp; arraySize&gt;0 &amp;&amp; <xsl:value-of select="@name"/>.size() == 0)
-					<xsl:value-of select="@name"/>.resize(arraySize);
+				if (al_status.code &lt; 0)
+					retStatus = PARTIAL_PUT;
+				else
+				{
+					if(aosCtx&gt;0 &amp;&amp; arraySize&gt;0 &amp;&amp; <xsl:value-of select="@name"/>.size() == 0)
+						<xsl:value-of select="@name"/>.resize(arraySize);
 
 				for( int i = 0; i &lt;arraySize; i++){
-                    status = <xsl:value-of select="@name"/>(i).<xsl:value-of select="$methodName"/>(aosCtx, idsTimeMode, idsFullName);
+                    status = <xsl:value-of select="@name"/>(i).<xsl:value-of select="$methodName"/>(aosCtx, idsTimeMode, idsFullName, skippedPaths);
                     if (status &gt; 0)
                     	retStatus = status;
                     if (status &lt; 0)
@@ -2629,6 +2658,7 @@ See IDSDef2Classes.xsl  -->
 				{	
 					al_end_action(ctx);
                     return al_status.code;
+				}
 				}
 					 
  			}
@@ -2685,11 +2715,13 @@ See IDSDef2Classes.xsl  -->
                 al_status = IdsNs::Ids::writeData(ctx, idsFullName, fieldPath, timeBasePath, this-><xsl:value-of select="@name"/>, "<xsl:value-of select="@lifecycle_status"/>");
             </xsl:otherwise>
         </xsl:choose>
-        if (IdsNs::Ids::isError(al_status, __FILE__, __LINE__, __func__))
+        if (IdsNs::Ids::mustAbort(al_status, SkippedPath::Operation::Write, fieldPath, skippedPaths, __FILE__, __LINE__, __func__))
         {   
             al_end_action(ctx);
             return al_status.code;
         }
+        if (al_status.code &lt; 0)
+            retStatus = PARTIAL_PUT;
         <xsl:if test="@type='dynamic' and not(ancestor::field[@type='dynamic' and @data_type='struct_array'])">
             }
         </xsl:if>
