@@ -66,3 +66,18 @@ else()
   set_tests_properties( cpp-TestSuite PROPERTIES
     ENVIRONMENT "${TESTSUITE_ENVIRONMENT}" )
 endif()
+
+# Truth table for the refusal-tolerance chokepoint (IdsNs::Ids::mustAbort). No
+# shim, no pulse and no backend can make a status land in the refusal band, so
+# this is driven with hand-made statuses instead, and registered unconditionally
+# -- unlike cpp-TestSuite above, it must run in an ordinary build.
+add_executable( cpp-test-refusal-policy
+  test_refusal_policy.cpp
+)
+target_include_directories( cpp-test-refusal-policy PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} )
+target_link_libraries( cpp-test-refusal-policy al-cpp )
+
+add_test( NAME cpp-test-refusal-policy COMMAND cpp-test-refusal-policy )
+set_tests_properties( cpp-test-refusal-policy PROPERTIES
+  FAIL_REGULAR_EXPRESSION "POLICY-FAILURE"
+)
