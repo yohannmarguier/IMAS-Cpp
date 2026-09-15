@@ -16,6 +16,31 @@ endif()
 set( AL_CORE_GIT_REPOSITORY "https://github.com/iterorganization/IMAS-Core.git" CACHE STRING "Git repository of AL-core" )
 set( AL_CORE_VERSION "main" CACHE STRING "Git commit/tag/branch of AL-core" )
 
+if( AL_USE_MULTIVERSION_SHIM AND AL_DOWNLOAD_DEPENDENCIES )
+  # Pin IMAS-Core to a revision carrying the path-aware HDF5 delete fix, by
+  # commit rather than by branch. Without it, the first delete a full put
+  # issues destroys the whole occurrence instead of the targeted candidate,
+  # no conversion is armed afterwards, and a later shim conformance scenario
+  # (tests/shim, see docs/SHIM_SUITE_CONVENTION.md F6.4) is red for a reason
+  # in neither this repository nor the shim.
+  #
+  # The fix (IMAS-Core #63, merged into a fork as #64:
+  # fix/63-hdf5-delete-data-path) has not been merged into
+  # iterorganization/IMAS-Core, so this pin necessarily points at that fork
+  # rather than upstream until it is. IMAS-Multiversion-DD-Loader pins the
+  # same commit (its IMAS_CORE_REF) for the same reason.
+  #
+  # Return to upstream (AL_CORE_GIT_REPOSITORY's default) once the fix lands
+  # there, by removing this block rather than editing the values below.
+  message( STATUS
+    "AL_USE_MULTIVERSION_SHIM=ON: pinning AL-core to the path-aware HDF5 "
+    "delete fix (dae4abdd9428bd28f47063f8f575bdc8abd915f2)" )
+  set( AL_CORE_GIT_REPOSITORY "https://github.com/yohannmarguier/IMAS-Core.git" CACHE STRING
+    "Git repository of AL-core" FORCE )
+  set( AL_CORE_VERSION "dae4abdd9428bd28f47063f8f575bdc8abd915f2" CACHE STRING
+    "Git commit/tag/branch of AL-core" FORCE )
+endif()
+
 include(FetchContent)
 
 if( ${AL_DOWNLOAD_DEPENDENCIES} )
@@ -248,6 +273,9 @@ install( CODE "
 
 if( AL_TESTS )
   add_subdirectory( tests/generator )
+  if( AL_USE_MULTIVERSION_SHIM )
+    add_subdirectory( tests/shim )
+  endif()
 endif()
 
 if( AL_EXAMPLES )

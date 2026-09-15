@@ -71,11 +71,20 @@ ctest --test-dir build -R example-cpp-test_magnetics_put --output-on-failure   #
 ctest --test-dir build -N                                                     # list tests
 ```
 
-Two test groups:
+Three test groups:
 - `cpp-TestSuite` — one huge generated executable (`tests/generator/TestSuite.xsl` +
   `helper.cpp`) that round-trips every field of every IDS. Disabled unless
   `AL_BACKEND_MDSPLUS=ON`.
 - `example-cpp-<name>` — one test per `examples/*.cpp`.
+- `cpp-test-shim-*` (`tests/shim/`) — the Tier-1 multiversion-shim conformance
+  suite from `docs/SHIM_SUITE_CONVENTION.md`. Registers only when
+  `AL_USE_MULTIVERSION_SHIM=ON`; not wired into CI. Labelled `shim` plus exactly
+  one of `contract-assertion`, `behaviour-pin`, `harness`. Refusals and other
+  error-shaped output are legitimate here, so `common/cmake/
+  ALExampleUtilities.cmake`'s `FAIL_REGULAR_EXPRESSION` (which fails any test
+  printing "error") is never used for it — a program's own exit status is the
+  pass condition, paired where needed with a distinctive `*-FAILURE` marker
+  in its own `FAIL_REGULAR_EXPRESSION`. See `tests/shim/README.md`.
 
 Things that bite:
 - Tests pass/fail on **output pattern matching**, not exit code: `FAIL_REGULAR_EXPRESSION`
