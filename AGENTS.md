@@ -113,6 +113,13 @@ templates with `mode` names that mirror the generated methods: `CLASS_DEFINITION
 Both stylesheets take `DD_GIT_DESCRIBE` and `AL_GIT_DESCRIBE` parameters, which end up as
 the `al_dd_version` / `al_cpp_version` constants.
 
+Read traversal refusal policy is generated in `GET_SINGLE`: only leaf `readData` calls and
+the failure arm of `al_begin_arraystruct_action` call `Ids::mustAbort`. Those sites thread
+the root IDS object's skipped-path record through every nested `get` call and return
+`PARTIAL_READ` after a tolerated refusal. Time-mode reads, occurrence opens, iteration and
+end-action calls, and readback-plugin bind/unbind remain fatal `isError` sites. Root `get`,
+`getSample`, and `getSlice` clear the record before starting their traversal.
+
 Regeneration is driven by a dummy output file (`build/src/dummy.txt`) behind the
 `al-cpp-sources` target, so generation reruns only when a stylesheet or `IDSDef.xml`
 changes — but it then rebuilds the whole (slow) library. `touch`ing a stylesheet is the
@@ -171,4 +178,3 @@ Default label vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `read
 ### Domain docs
 
 Single-context layout — `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
-
