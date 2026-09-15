@@ -127,7 +127,9 @@ the failure arm of `al_begin_arraystruct_action` call `Ids::mustAbort`. Those si
 the root IDS object's skipped-path record through every nested `get` call and return
 `PARTIAL_READ` after a tolerated refusal. Time-mode reads, occurrence opens, iteration and
 end-action calls, and readback-plugin bind/unbind remain fatal `isError` sites. Root `get`,
-`getSample`, and `getSlice` clear the record before starting their traversal.
+`getSample`, and `getSlice` clear the record before starting their traversal. `partialGet`
+also clears it on entry, before plugin setup can fail, and its delegated `get` clears it
+again before traversal.
 
 Write/delete refusal policy is generated in `PUT_SINGLE` and `DELETE`: only leaf `writeData` /
 `al_delete_data` calls and the failure arm of `al_begin_arraystruct_action` call

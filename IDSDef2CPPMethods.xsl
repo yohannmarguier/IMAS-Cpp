@@ -808,6 +808,8 @@ int IdsNs::<xsl:value-of select="@name"/>_IDSBase::partialGet(const std::string 
 int IdsNs::<xsl:value-of select="@name"/>_IDSBase::partialGet(int iOccurrence, const std::string &amp;includes, 
         const std::string &amp;excludes, bool debug)
 {
+        resetSkippedPaths();
+
         const char *idsName = "<xsl:value-of select="@name"/>";
         std::string idsFullName = std::string(idsName);
 

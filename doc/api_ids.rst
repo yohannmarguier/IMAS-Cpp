@@ -280,10 +280,11 @@ IDS (``IdsNs::Ids``) API
         The record is reset at the start of each root operation
         (:cpp:func:`get`, :cpp:func:`getSlice`, :cpp:func:`getSample`,
         :cpp:func:`put`, :cpp:func:`putSlice`, :cpp:func:`deleteAll`), and
-        :cpp:func:`partialGet` resets it as well, through the
-        :cpp:func:`get` it calls, so it always describes the operation
-        that just completed. It is empty when the operation completed
-        without any tolerated refusal.
+        :cpp:func:`partialGet` resets it before configuring its filtering
+        plugin, and the :cpp:func:`get` it delegates to also clears it before
+        traversal. It therefore never exposes skipped paths from an earlier
+        operation, including when plugin setup fails. It is empty when the
+        operation completed without any tolerated refusal.
 
         Refused writes and deletes are best effort: a
         :cpp:expr:`PARTIAL_PUT` means the refused fields were not written,
@@ -369,5 +370,4 @@ IDS (``IdsNs::Ids``) API
 
         The status code returned by the shim for the refusal, within the
         refusal band (``-1000..-1099``).
-
 
