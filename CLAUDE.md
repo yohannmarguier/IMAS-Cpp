@@ -94,7 +94,12 @@ Three test groups:
   refuses at `equilibrium.get`, without a skipped path or populated IDS. Its
   frozen reason is captured from generated `get` standard output only after
   the executable has verified a refusal-band status and exited cleanly; this
-  is the suite's named external-behaviour exception.
+  is the suite's named external-behaviour exception. It also gets a private
+  cleaned loss-log directory, even though it does not inspect that log.
+  `tests/shim/README.md`
+  publishes the contract-assertion red list; update it with a reviewed cause
+  and owner whenever a contract assertion is red, and identify the test host
+  and loaded IMAS-Core whenever recording an observed empty list.
 
 Things that bite:
 - Tests pass/fail on **output pattern matching**, not exit code: `FAIL_REGULAR_EXPRESSION`

@@ -301,6 +301,8 @@ else()
   # IDS::open therefore forwards, while equilibrium.get reaches the occurrence
   # open and returns the shim's refusal before any data seam is served.
   add_dependencies( cpp-test-shim-stamp-malformed cpp-shim-stamp-fixtures )
+  al_cpp_shim_private_loss_log( cpp-test-shim-stamp-malformed
+    AL_SHIM_STAMP_MALFORMED_LOSS_LOG_DIR )
 
   # The program verifies every returned public status and the untouched IDS.
   # Its generated get() prints the frozen reason rather than returning it, so
@@ -316,7 +318,8 @@ else()
       -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_fixture_unchanged.cmake"
   )
   set_tests_properties( cpp-test-shim-stamp-malformed PROPERTIES
-    ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT}"
+    ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT};IMAS_MVDD_LOSS_LOG_DIR=${AL_SHIM_STAMP_MALFORMED_LOSS_LOG_DIR}"
+    FIXTURES_REQUIRED cpp-test-shim-stamp-malformed-loss-log
     LABELS "shim;contract-assertion"
     FAIL_REGULAR_EXPRESSION "REFUSAL-FAILURE;SCENARIO-FAILURE"
   )

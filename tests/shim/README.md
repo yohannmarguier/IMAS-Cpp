@@ -83,7 +83,9 @@ read scenario each need:
   frozen reason is the suite's one named exception to public-return-value-only
   assertions: `get` prints the occurrence-open message instead of returning
   it, so the fixture wrapper reads the program's standard output only after
-  the executable has validated the refusal-band status and exited cleanly.
+  the executable has validated the refusal-band status and exited cleanly. It
+  also gets a fresh private loss-log directory because its refused occurrence
+  open may otherwise leave a loss log in CTest's shared working directory.
 
 None of `cpp-test-shim-linkage`, `cpp-test-shim-run-guard`, the comparator
 tests, or the fixture/stamp-variant tests above call into the shim's runtime
@@ -91,9 +93,8 @@ tests, or the fixture/stamp-variant tests above call into the shim's runtime
 directly; the copy and digest self-tests use a synthetic directory), so this
 ticket still declares no **profile** (Tier-1 read tolerance) or **direction**
 (which DD pair, which way) -- see `docs/SHIM_SUITE_CONVENTION.md` S2.3 and
-D2. Issue #24 owns that declaration, together with the red list and the
-coverage boundaries, and this section should be replaced with it as that
-work lands.
+D2. Issue #24 owns that declaration and the coverage boundaries, and this
+section should be replaced with them as that work lands.
 
 IMAS-Core is pinned to a fork commit carrying the path-aware HDF5 delete fix
 (IMAS-Core #63/#64) whenever `AL_USE_MULTIVERSION_SHIM=ON` -- see the comment
@@ -115,6 +116,16 @@ ctest --test-dir <shim-build> -L harness --output-on-failure
 never inverted, quarantined, or softened to match observed behaviour. No
 `behaviour-pin` test exists here yet.
 
+## Contract assertions known to be red
+
+There are none. `cpp-test-shim-stamp-malformed` passed on 2026-09-15 on
+`MacBook-Pro-de-Yohann.local` (Darwin 25.6.0, arm64), after the fixture
+provenance and stamp-variant checks passed. The shim loaded IMAS-Core commit
+`dae4abdd9428bd28f47063f8f575bdc8abd915f2` from
+`cmake-build-debug-shim/_deps/al-core-build/libal.5.7.2.86.dylib`. Re-run the
+shim-labelled suite and its linkage check before treating that observation as
+a statement about another shim or IMAS-Core build.
+
 This suite is not wired into CI. Wiring it in is a decision to take
-explicitly, once there is a red list to publish (S1 D5) and a loaded
-IMAS-Core to record alongside it.
+explicitly, once its profile, direction, and coverage boundaries are
+published (S1 D5) alongside the loaded IMAS-Core.
