@@ -11,7 +11,9 @@
 # additionally give EXPECTED_STDOUT_SUBSTRING when its only public route to a
 # diagnostic is the HLI's standard output. The program's exit status is always
 # checked before that captured output, so similar text from an ordinary failure
-# cannot satisfy the diagnostic assertion.
+# cannot satisfy the diagnostic assertion. A caller that supplies LOSS_LOG_DIR
+# also gets the required assertion that its private loss-log directory stayed
+# empty.
 if( NOT DEFINED FIXTURE_ROOT OR NOT DEFINED COMMAND_TO_RUN )
   message( FATAL_ERROR "SCENARIO-FAILURE: FIXTURE_ROOT and COMMAND_TO_RUN are required" )
 endif()
@@ -37,6 +39,17 @@ endif()
 al_cpp_shim_fixture_digest( "${FIXTURE_ROOT}" _al_cpp_shim_digest_after )
 if( NOT _al_cpp_shim_digest_after STREQUAL _al_cpp_shim_digest_before )
   message( SEND_ERROR "SCENARIO-FAILURE: the read modified the checked-in fixture under ${FIXTURE_ROOT}" )
+endif()
+
+if( DEFINED LOSS_LOG_DIR )
+  if( NOT IS_DIRECTORY "${LOSS_LOG_DIR}" )
+    message( SEND_ERROR "SCENARIO-FAILURE: private loss-log directory is missing: ${LOSS_LOG_DIR}" )
+  else()
+    file( GLOB _al_cpp_shim_loss_logs "${LOSS_LOG_DIR}/*" )
+    if( _al_cpp_shim_loss_logs )
+      message( SEND_ERROR "SCENARIO-FAILURE: expected no loss-log files under ${LOSS_LOG_DIR}" )
+    endif()
+  endif()
 endif()
 
 if( NOT _al_cpp_shim_digest_result EQUAL 0 )

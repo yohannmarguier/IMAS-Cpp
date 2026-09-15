@@ -5,7 +5,7 @@ This directory holds the Tier-1 shim conformance suite described in
 `AL_USE_MULTIVERSION_SHIM=ON`; with shim mode off the registered test list is
 exactly what it was before this suite existed.
 
-## Scope so far (issues #10, #11, #12, #14)
+## Scope so far (issues #10, #11, #12, #13, #14)
 
 Issue #10 registered the suite's scaffold and its first test.
 Issue #11 added the shared comparison oracle every fixture-driven family
@@ -86,6 +86,17 @@ read scenario each need:
   the executable has validated the refusal-band status and exited cleanly. It
   also gets a fresh private loss-log directory because its refused occurrence
   open may otherwise leave a loss log in CTest's shared working directory.
+- `cpp-test-shim-version-unset`, `cpp-test-shim-stamp-equal`,
+  `cpp-test-shim-stamp-absent`, and
+  `cpp-test-shim-stamp-mismatch-no-artifact` (F2.1--F2.4,
+  `contract-assertion`): four separately launched HDF5 reads covering every
+  state in which the shim must forward untouched. Each proves clean success,
+  no skipped paths, fixture data, an unchanged fixture, and an empty private
+  loss-log directory. The version-unset registration composes an environment
+  without `IMAS_MVDD_HLI_DD_VERSION`; it does not clear an injected value. The
+  mismatch-without-artifact scenario also checks that the newer-DD-only
+  `beta_tor_norm` remains absent, and its source header records why its
+  otherwise indistinguishable result must remain a separate scenario.
 
 None of `cpp-test-shim-linkage`, `cpp-test-shim-run-guard`, the comparator
 tests, or the fixture/stamp-variant tests above call into the shim's runtime
@@ -111,8 +122,8 @@ ctest --test-dir <shim-build> -L shim --output-on-failure
 ctest --test-dir <shim-build> -L harness --output-on-failure
 ```
 
-`cpp-test-shim-stamp-malformed` is the first `contract-assertion`; it follows
-`docs/SHIM_SUITE_CONVENTION.md` S1 D5 and stays red while the shim disagrees,
+The five F2/F3 `contract-assertion` tests follow
+`docs/SHIM_SUITE_CONVENTION.md` S1 D5 and stay red while the shim disagrees,
 never inverted, quarantined, or softened to match observed behaviour. No
 `behaviour-pin` test exists here yet.
 

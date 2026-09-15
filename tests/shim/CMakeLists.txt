@@ -323,4 +323,58 @@ else()
     LABELS "shim;contract-assertion"
     FAIL_REGULAR_EXPRESSION "REFUSAL-FAILURE;SCENARIO-FAILURE"
   )
+
+  # Family 2 (docs/SHIM_SUITE_CONVENTION.md S5.2, issue #13): all four
+  # passthrough states read an HDF5 equilibrium fixture. They share one
+  # binary but are four CTest commands, hence four processes; that isolation
+  # matters because the shim latches an HLI DD version once per process.
+  if( NOT AL_BACKEND_HDF5 )
+    message( STATUS "Not registering shim passthrough scenarios: HDF5 backend is disabled" )
+  else()
+    add_executable( cpp-test-shim-passthrough test_shim_passthrough.cpp )
+    target_include_directories( cpp-test-shim-passthrough PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} )
+    target_link_libraries( cpp-test-shim-passthrough al-cpp )
+    add_dependencies( cpp-test-shim-passthrough cpp-shim-stamp-fixtures )
+
+    function( al_cpp_shim_add_passthrough_scenario test_name scenario fixture use_hli_version )
+      al_cpp_shim_private_loss_log( ${test_name} _loss_log_dir )
+
+      # The version-unset process gets a newly composed CTest environment that
+      # contains the Core loader location but never contains the injected HLI
+      # version. Do not launch it with a version and unset it in a wrapper:
+      # absence, not an empty value or a late mutation, is F2.1's contract.
+      set( _environment ${AL_CPP_SHIM_TEST_ENVIRONMENT}
+        "IMAS_MVDD_LOSS_LOG_DIR=${_loss_log_dir}" )
+      if( NOT use_hli_version )
+        list( FILTER _environment EXCLUDE REGEX "^IMAS_MVDD_HLI_DD_VERSION=" )
+      endif()
+
+      add_test( NAME ${test_name}
+        COMMAND ${CMAKE_COMMAND}
+          -D "FIXTURE_ROOT=${fixture}"
+          -D "LOSS_LOG_DIR=${_loss_log_dir}"
+          -D "COMMAND_TO_RUN=$<TARGET_FILE:cpp-test-shim-passthrough>;${scenario};${fixture}"
+          -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_fixture_unchanged.cmake"
+      )
+      set_tests_properties( ${test_name} PROPERTIES
+        FIXTURES_REQUIRED "${test_name}-loss-log"
+        LABELS "shim;contract-assertion"
+        ENVIRONMENT "${_environment}"
+        FAIL_REGULAR_EXPRESSION "PASSTHROUGH-FAILURE|SCENARIO-FAILURE"
+      )
+    endfunction()
+
+    al_cpp_shim_add_passthrough_scenario(
+      cpp-test-shim-version-unset version-unset
+      "${AL_SHIM_FIXTURE_ROOT}/dd-3.39.0" FALSE )
+    al_cpp_shim_add_passthrough_scenario(
+      cpp-test-shim-stamp-equal stamp-equal
+      "${AL_SHIM_FIXTURE_ROOT}/dd-4.1.1" TRUE )
+    al_cpp_shim_add_passthrough_scenario(
+      cpp-test-shim-stamp-absent stamp-absent
+      "${AL_SHIM_STAMP_ABSENT_FIXTURE}" TRUE )
+    al_cpp_shim_add_passthrough_scenario(
+      cpp-test-shim-stamp-mismatch-no-artifact stamp-mismatch-no-artifact
+      "${AL_SHIM_STAMP_MISMATCH_FIXTURE}" TRUE )
+  endif()
 endif()
