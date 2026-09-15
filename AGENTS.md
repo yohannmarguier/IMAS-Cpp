@@ -84,7 +84,12 @@ Three test groups:
   ALExampleUtilities.cmake`'s `FAIL_REGULAR_EXPRESSION` (which fails any test
   printing "error") is never used for it — a program's own exit status is the
   pass condition, paired where needed with a distinctive `*-FAILURE` marker
-  in its own `FAIL_REGULAR_EXPRESSION`. See `tests/shim/README.md`.
+  in its own `FAIL_REGULAR_EXPRESSION`. See `tests/shim/README.md`. Its
+  fixture-driven tests read `imas-python-fixtures/` (vendored from
+  IMAS-Fortran, not generated here — see that directory's README), whose
+  provenance and derived stamp-state variants are themselves registered
+  tests, gated on a Python venv with `imas-python`/`h5py` and `h5diff` being
+  present.
 
 Things that bite:
 - Tests pass/fail on **output pattern matching**, not exit code: `FAIL_REGULAR_EXPRESSION`
