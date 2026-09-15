@@ -5,11 +5,13 @@ This directory holds the Tier-1 shim conformance suite described in
 `AL_USE_MULTIVERSION_SHIM=ON`; with shim mode off the registered test list is
 exactly what it was before this suite existed.
 
-## Scope so far (issues #10, #11)
+## Scope so far (issues #10, #11, #12)
 
 Issue #10 registered the suite's scaffold and its first test.
-Issue #11 adds the shared comparison oracle every fixture-driven family
-(issues #12-14, #24) will read its verdicts from:
+Issue #11 added the shared comparison oracle every fixture-driven family
+(issues #13, #14, #24) will read its verdicts from. Issue #12 vendors the
+fixture pair those families read and the two isolation helpers a write and a
+read scenario each need:
 
 - `cpp-test-shim-linkage` (F1.1, `harness`): inspects the built `al-cpp`
   library's dynamic dependencies with `otool`/`objdump` and fails unless the
@@ -40,13 +42,50 @@ Issue #11 adds the shared comparison oracle every fixture-driven family
   reading in each. It counts how many named sides it finds across this
   directory and fails below a floor, so it cannot pass by finding nothing;
   the floor rises as later tickets add their own `Compare()` call sites.
+- **`../../imas-python-fixtures/`** (vendored verbatim from IMAS-Fortran, see
+  its own README): two completely filled `equilibrium` HDF5 pulses, DD
+  3.39.0 and DD 4.1.1, describing one equilibrium, generated from a single
+  shared value table by two modules that decide only *where* each value
+  goes. Every fixture-driven family this suite still needs (issues #13, #14,
+  #24) reads its expected values out of these pulses rather than out of a
+  literal (`docs/SHIM_SUITE_CONVENTION.md` D4).
+- `cpp-test-shim-fixture-provenance` (F1.4, `harness`): regenerates the pair
+  outside the checkout with `imas-python-fixtures/verify_fixtures.sh` and
+  compares every HDF5 dataset against the checked-in oracle with `h5diff`.
+  Registers only when the fixtures' own venv (`imas-python-fixtures/.venv`,
+  see its README) and `h5diff` are both present; a missing prerequisite
+  skips the test rather than passing it without comparing.
+- `derive_stamp_variant.py` / `cpp-test-shim-stamp-variants`: three
+  stamp-state fixtures -- stamp **absent** (the version dataset deleted),
+  stamp **malformed** (a value that fails the version grammar), and stamp
+  **mismatched with no artifact** (a grammar-valid known release neither
+  this suite's HLI version nor DD 3.39.0) -- derived from the checked-in DD
+  3.39.0 pulse at build time via a `cpp-test-shim-stamp-fixtures` `ALL`
+  target, never committed. `cpp-test-shim-stamp-variants` (`harness`) checks
+  the three keep the states F2.3 and F3.1 need distinct, rather than trusting
+  the derivation script did. Registers only when the venv additionally has
+  `h5py`.
+- `al_cpp_shim_private_fixture_copy()` / `cpp-test-shim-fixture-copy`: the
+  CMake function a write scenario (issue #24) uses to get a freshly made
+  private copy of a fixture, so parallel scenarios cannot collide and a
+  failed run leaves no poison. The self-test exercises it against a
+  synthetic directory, not a pulse.
+- `fixture_digest.cmake` / `verify_fixture_unchanged.cmake` /
+  `cpp-test-shim-fixture-digest`: the content-digest helper a read scenario
+  (issues #13, #14, #24) wraps its executable in to prove the checked-in
+  fixture it read is unchanged afterwards -- content, not mtime, because an
+  HDF5 rewrite can leave both alone. The self-test exercises it against a
+  synthetic directory too.
 
-Neither `cpp-test-shim-linkage` nor `cpp-test-shim-run-guard` nor the
-comparator tests call into the shim's runtime, so this ticket still declares
-no **profile** (Tier-1 read tolerance) or **direction** (which DD pair, which
-way) -- see `docs/SHIM_SUITE_CONVENTION.md` S2.3 and D2. The tickets that add
-the fixture-driven families (issues #12-14, #24) own those declarations, and
-this section should be replaced with them as that work lands.
+None of `cpp-test-shim-linkage`, `cpp-test-shim-run-guard`, the comparator
+tests, or the fixture/stamp-variant tests above call into the shim's runtime
+(fixture provenance and the stamp-variant check inspect and derive HDF5
+directly; the copy and digest self-tests use a synthetic directory), so this
+ticket still declares no **profile** (Tier-1 read tolerance) or **direction**
+(which DD pair, which way) -- see `docs/SHIM_SUITE_CONVENTION.md` S2.3 and
+D2. Issue #24 owns that declaration, together with the red list and the
+coverage boundaries, and this section should be replaced with it as that
+work lands.
 
 IMAS-Core is pinned to a fork commit carrying the path-aware HDF5 delete fix
 (IMAS-Core #63/#64) whenever `AL_USE_MULTIVERSION_SHIM=ON` -- see the comment

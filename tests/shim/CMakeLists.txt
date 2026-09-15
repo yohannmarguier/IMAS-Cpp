@@ -104,6 +104,59 @@ set_tests_properties( cpp-test-shim-verdict-orientation PROPERTIES
   LABELS "shim;harness"
 )
 
+# F1.4 fixture-provenance (docs/SHIM_SUITE_CONVENTION.md S3.2, S5.1): the
+# checked-in equilibrium pulses must be what imas-python-fixtures/ produces,
+# or every rule-table assertion this suite will ever make (issues #13, #14,
+# #24) is against numbers nobody can re-derive. verify_fixtures.sh
+# regenerates them outside the checkout and compares every HDF5 dataset with
+# h5diff -- registering it here is what turns that from a script somebody
+# may remember to run into a criterion the suite enforces.
+#
+# It needs the fixtures' own virtualenv (imas-python-fixtures/README.md) and
+# h5diff, neither of which this project builds, so it registers only when
+# both are present -- the same pattern as the linkage test above. A missing
+# venv means the check is skipped, never that it silently passes.
+set( AL_SHIM_FIXTURE_VENV_PYTHON "${CMAKE_SOURCE_DIR}/imas-python-fixtures/.venv/bin/python" )
+find_program( AL_SHIM_H5DIFF h5diff )
+if( EXISTS "${AL_SHIM_FIXTURE_VENV_PYTHON}" AND AL_SHIM_H5DIFF )
+  add_test( NAME cpp-test-shim-fixture-provenance
+    COMMAND "${CMAKE_SOURCE_DIR}/imas-python-fixtures/verify_fixtures.sh"
+  )
+  set_tests_properties( cpp-test-shim-fixture-provenance PROPERTIES
+    LABELS "shim;harness"
+  )
+else()
+  message( STATUS
+    "Not registering cpp-test-shim-fixture-provenance: needs "
+    "imas-python-fixtures/.venv (see its README) and h5diff" )
+endif()
+
+# The root every fixture-driven family in this suite (issues #13, #14, #24)
+# reads from.
+set( AL_SHIM_FIXTURE_ROOT "${CMAKE_SOURCE_DIR}/imas-python-fixtures/fixtures" )
+
+# Two harness self-tests for helpers this ticket adds and later tickets rely
+# on: a content-digest check that a read scenario's fixture is unchanged
+# afterwards (docs/SHIM_SUITE_CONVENTION.md S3.3), and a private, freshly
+# made copy for a write scenario (S3.3, S6). Both are exercised here against
+# a synthetic directory, not a pulse -- a pulse-based test can never prove
+# its own harness right, the same reasoning S4.4 gives the comparator.
+add_test( NAME cpp-test-shim-fixture-digest
+  COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/check_fixture_digest.cmake"
+)
+set_tests_properties( cpp-test-shim-fixture-digest PROPERTIES
+  LABELS "shim;harness"
+  FAIL_REGULAR_EXPRESSION "FIXTURE-DIGEST-FAILURE"
+)
+
+add_test( NAME cpp-test-shim-fixture-copy
+  COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/check_fixture_copy.cmake"
+)
+set_tests_properties( cpp-test-shim-fixture-copy PROPERTIES
+  LABELS "shim;harness"
+  FAIL_REGULAR_EXPRESSION "FIXTURE-COPY-FAILURE"
+)
+
 # Give one test a private, empty loss-log directory.
 #
 # Leaving IMAS_MVDD_LOSS_LOG_DIR unset is not neutral: docs/
@@ -137,3 +190,103 @@ function( al_cpp_shim_private_loss_log test_name out_var )
   )
   set( ${out_var} "${_dir}" PARENT_SCOPE )
 endfunction()
+
+# A write scenario's private fixture copy (docs/SHIM_SUITE_CONVENTION.md
+# S3.3): "A write test MUST run against a private copy made fresh before
+# each run, so scenarios can run in parallel and a failed run leaves no
+# poison." No test below calls this yet -- the round-trip, torn-write and
+# full-put-stamp write scenarios are issue #24's -- but the helper ships
+# with this ticket for the same reason al_cpp_shim_private_loss_log did with
+# #10: the family that needs it should need nothing else from the scaffold.
+function( al_cpp_shim_private_fixture_copy test_name source out_var )
+  set( _dir "${CMAKE_CURRENT_BINARY_DIR}/${test_name}-fixture" )
+  add_test( NAME ${test_name}-fixture-copy
+    COMMAND ${CMAKE_COMMAND}
+      -D "SOURCE=${source}"
+      -D "DESTINATION=${_dir}"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/copy_fixture.cmake"
+  )
+  # No second label, for the same reason as the loss-log setup test above:
+  # this is FIXTURES_SETUP plumbing, not itself a statement about the shim.
+  set_tests_properties( ${test_name}-fixture-copy PROPERTIES
+    FIXTURES_SETUP ${test_name}-fixture
+    LABELS "shim"
+  )
+  set( ${out_var} "${_dir}" PARENT_SCOPE )
+endfunction()
+
+# Stamp-state variants (docs/SHIM_SUITE_CONVENTION.md S3.3): three fixture
+# states the passthrough and occurrence-open-refusal families (issues #13,
+# #14) read while opening an occurrence, so they must exist before those
+# tests' programs begin. Derived at build time from the checked-in DD
+# 3.39.0 pulse -- absent (the stamp dataset deleted), malformed (a value
+# that fails the version grammar), and mismatched with no artifact (a
+# grammar-valid known release that is neither this suite's HLI version nor
+# DD 3.39.0) -- and never committed: a ~40-line script copying the pulse and
+# editing one dataset is enough; three more HDF5 pulses in the repository is
+# not.
+#
+# Gated on the same fixtures venv as F1.4 above, plus h5py specifically:
+# regenerating the pair only needs imas-python, but editing one dataset in a
+# copy needs h5py, and the two are not the same dependency set.
+set( AL_SHIM_STAMP_VARIANT_TOOLING_AVAILABLE FALSE )
+if( EXISTS "${AL_SHIM_FIXTURE_VENV_PYTHON}" )
+  execute_process(
+    COMMAND "${AL_SHIM_FIXTURE_VENV_PYTHON}" -c "import h5py"
+    RESULT_VARIABLE AL_SHIM_STAMP_VARIANT_H5PY_RESULT
+    OUTPUT_QUIET
+    ERROR_QUIET
+  )
+  if( AL_SHIM_STAMP_VARIANT_H5PY_RESULT EQUAL 0 )
+    set( AL_SHIM_STAMP_VARIANT_TOOLING_AVAILABLE TRUE )
+  endif()
+endif()
+
+if( NOT AL_SHIM_STAMP_VARIANT_TOOLING_AVAILABLE )
+  message( STATUS
+    "Not registering shim stamp-variant tests: needs imas-python-fixtures/.venv with h5py" )
+else()
+  set( AL_SHIM_STAMP_VARIANT_SOURCE "${AL_SHIM_FIXTURE_ROOT}/dd-3.39.0" )
+  set( AL_SHIM_STAMP_ABSENT_FIXTURE "${CMAKE_CURRENT_BINARY_DIR}/stamp-absent-fixture" )
+  set( AL_SHIM_STAMP_MALFORMED_FIXTURE "${CMAKE_CURRENT_BINARY_DIR}/stamp-malformed-fixture" )
+  set( AL_SHIM_STAMP_MISMATCH_FIXTURE "${CMAKE_CURRENT_BINARY_DIR}/stamp-mismatch-fixture" )
+
+  add_custom_command(
+    OUTPUT
+      "${AL_SHIM_STAMP_ABSENT_FIXTURE}/equilibrium.h5"
+      "${AL_SHIM_STAMP_MALFORMED_FIXTURE}/equilibrium.h5"
+      "${AL_SHIM_STAMP_MISMATCH_FIXTURE}/equilibrium.h5"
+    COMMAND "${AL_SHIM_FIXTURE_VENV_PYTHON}" "${CMAKE_CURRENT_SOURCE_DIR}/derive_stamp_variant.py"
+      "${AL_SHIM_STAMP_VARIANT_SOURCE}" "${AL_SHIM_STAMP_ABSENT_FIXTURE}" absent
+    COMMAND "${AL_SHIM_FIXTURE_VENV_PYTHON}" "${CMAKE_CURRENT_SOURCE_DIR}/derive_stamp_variant.py"
+      "${AL_SHIM_STAMP_VARIANT_SOURCE}" "${AL_SHIM_STAMP_MALFORMED_FIXTURE}" malformed
+    COMMAND "${AL_SHIM_FIXTURE_VENV_PYTHON}" "${CMAKE_CURRENT_SOURCE_DIR}/derive_stamp_variant.py"
+      "${AL_SHIM_STAMP_VARIANT_SOURCE}" "${AL_SHIM_STAMP_MISMATCH_FIXTURE}" mismatch
+    DEPENDS
+      "${CMAKE_CURRENT_SOURCE_DIR}/derive_stamp_variant.py"
+      "${AL_SHIM_STAMP_VARIANT_SOURCE}/equilibrium.h5"
+      "${AL_SHIM_STAMP_VARIANT_SOURCE}/master.h5"
+    VERBATIM
+  )
+  # Named without the cpp-test-shim- prefix used everywhere else in this
+  # file: this is a build target, not a registered CTest test, and `ctest
+  # -N` should not suggest otherwise.
+  add_custom_target( cpp-shim-stamp-fixtures ALL DEPENDS
+    "${AL_SHIM_STAMP_ABSENT_FIXTURE}/equilibrium.h5"
+    "${AL_SHIM_STAMP_MALFORMED_FIXTURE}/equilibrium.h5"
+    "${AL_SHIM_STAMP_MISMATCH_FIXTURE}/equilibrium.h5"
+  )
+
+  # Prove the three variants keep the states F2.3 and F3.1 need distinct,
+  # rather than trusting the derivation script did -- see
+  # verify_stamp_variants.py's own docstring for the failure this would
+  # catch.
+  add_test( NAME cpp-test-shim-stamp-variants
+    COMMAND "${AL_SHIM_FIXTURE_VENV_PYTHON}" "${CMAKE_CURRENT_SOURCE_DIR}/verify_stamp_variants.py"
+      "${AL_SHIM_STAMP_ABSENT_FIXTURE}" "${AL_SHIM_STAMP_MALFORMED_FIXTURE}" "${AL_SHIM_STAMP_MISMATCH_FIXTURE}"
+  )
+  set_tests_properties( cpp-test-shim-stamp-variants PROPERTIES
+    LABELS "shim;harness"
+    FAIL_REGULAR_EXPRESSION "STAMP-VARIANT-FAILURE"
+  )
+endif()

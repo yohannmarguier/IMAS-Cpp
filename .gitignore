@@ -13,3 +13,5 @@ CMakeUserPresets.json
 /graphify-out
 /.idea
 /.claude
+/imas-python-fixtures/.venv/
+/imas-python-fixtures/__pycache__/
