@@ -11,7 +11,9 @@ Issues and PRDs for this repo live as GitHub issues. Use the `gh` CLI for all op
 - **Apply / remove labels**: `gh issue edit <number> --add-label "..."` / `--remove-label "..."`
 - **Close**: `gh issue close <number> --comment "..."`
 
-Infer the repo from `git remote -v` — `gh` does this automatically when run inside a clone.
+**Always pass `--repo yohannmarguier/IMAS-Cpp`.** Issues for this work live on the fork.
+A bare `gh` call infers the repo from `git remote -v` and resolves to the `upstream`
+remote (`iterorganization/IMAS-Cpp`), which is the organisation's tracker, not ours.
 
 ## Pull requests as a triage surface
 
