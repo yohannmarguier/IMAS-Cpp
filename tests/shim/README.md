@@ -5,7 +5,7 @@ This directory holds the Tier-1 shim conformance suite described in
 `AL_USE_MULTIVERSION_SHIM=ON`; with shim mode off the registered test list is
 exactly what it was before this suite existed.
 
-## Scope so far (issues #10, #11, #12, #13, #14, #15, #21)
+## Scope so far (issues #10, #11, #12, #13, #14, #15, #18, #21)
 
 Issue #10 registered the suite's scaffold and its first test.
 Issue #11 added the shared comparison oracle every fixture-driven family
@@ -109,6 +109,25 @@ read scenario each need:
   chi-squared unit redefinitions now fall through as identical in the map.
   The map wins over the stale quoted count of 32. Each rule derives its expected verdict from the shared
   kind mapping, and a multi-leaf rule reports its first non-agreeing verdict.
+- `cpp-test-shim-refusal-channels` (F4.4, `contract-assertion`, HDF5 builds): the same two
+  reads as F4.1, asserting that the map's one `retyped` rule --
+  `grids_ggd/grid/space/coordinates_type` (an int array in DD 3.39.0, an array
+  of identifier structures in DD 4.1.1, no transformation reshapes one into
+  the other) -- is reported on all three refusal channels rather than merely
+  tolerated: the value is left absent, the path is named in the skipped-path
+  record, and the read reports `PARTIAL_READ`. Three structural checks show
+  the refusal was absorbed at the field, not by truncating its surroundings:
+  the enclosing containers survived, a field read after it within the same
+  structure arrived, and a field served later in the traversal (equilibrium's
+  root `time`) still agrees with the oracle. The converted read's
+  skipped-path record is copied out before the oracle read runs, since the
+  record resets at the start of each root operation and the oracle read would
+  otherwise erase it. `tests/shim/shim_refusal_match.h` is the shared
+  record-matching predicate the next refusal-family ticket reuses: it matches
+  the operation, the full DD path (on the tail of the message's `DD path: `
+  field, so it tolerates truncation and a future generator prefixing that
+  field with more context), the reason substring, and the refusal-status
+  band.
 - `cpp-test-shim-roundtrip-cross-dd` and `cpp-test-shim-roundtrip-same-dd`
   (F6.1--F6.2, `contract-assertion`): two registrations of one program that
   appends a curated `psi_axis` value at a COCOS sign-flip path, then reads the

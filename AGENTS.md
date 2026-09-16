@@ -97,6 +97,20 @@ Three test groups:
   Both assert exact time-slice/time-base growth, unchanged time mode, and a
   curated COCOS-mapped `psi_axis` round trip. The test is a consistency check,
   not evidence of the native on-disk stored path or sign.
+  `cpp-test-shim-refusal-channels` (issue #18; HDF5 builds) asserts the map's
+  one `retyped` rule -- `grids_ggd/grid/space/coordinates_type` -- is reported
+  on all three refusal channels, not merely tolerated: the value is left
+  absent, the path is named in the skipped-path record, and the read reports
+  `PARTIAL_READ`. It also asserts the refusal was absorbed at the field rather
+  than by truncating its surroundings (the enclosing containers survived, a
+  field read after it in the same structure arrived, and a field served later
+  in the traversal still agrees with the oracle), and copies the converted
+  read's skipped-path record out before the oracle read runs, since that
+  record resets at the start of each root operation. `tests/shim/
+  shim_refusal_match.h` is the shared record-matching predicate: it matches
+  the operation, the full DD path (on the tail of the message's `DD path: `
+  field, which survives truncation and tolerates a future generator
+  prefixing it), the reason substring, and the refusal-status band.
 
 Things that bite:
 - Tests pass/fail on **output pattern matching**, not exit code: `FAIL_REGULAR_EXPRESSION`

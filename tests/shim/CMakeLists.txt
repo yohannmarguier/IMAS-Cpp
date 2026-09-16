@@ -409,6 +409,33 @@ else()
   message( STATUS "Not registering shim structural rules: HDF5 backend is disabled" )
 endif()
 
+# Family 4.4 (docs/SHIM_SUITE_CONVENTION.md S5.4, issue #18): the map's one
+# `retyped` rule -- grids_ggd/grid/space/coordinates_type -- must be reported
+# on all three channels (value, refused-path record, status), not merely
+# survived. Same two reads as F4.1, read-only, so it needs HDF5 for the same
+# reason.
+if( AL_BACKEND_HDF5 )
+  add_executable( cpp-test-shim-refusal-channels test_shim_refusal_channels.cpp )
+  target_include_directories( cpp-test-shim-refusal-channels PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} )
+  target_link_libraries( cpp-test-shim-refusal-channels PRIVATE al-cpp )
+  al_cpp_shim_private_loss_log( cpp-test-shim-refusal-channels
+    AL_SHIM_REFUSAL_CHANNELS_LOSS_LOG_DIR )
+  add_test( NAME cpp-test-shim-refusal-channels
+    COMMAND ${CMAKE_COMMAND}
+      -D "FIXTURE_ROOT=${AL_SHIM_FIXTURE_ROOT}"
+      -D "COMMAND_TO_RUN=$<TARGET_FILE:cpp-test-shim-refusal-channels>;${AL_SHIM_FIXTURE_ROOT}"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_fixture_unchanged.cmake"
+  )
+  set_tests_properties( cpp-test-shim-refusal-channels PROPERTIES
+    ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT};IMAS_MVDD_LOSS_LOG_DIR=${AL_SHIM_REFUSAL_CHANNELS_LOSS_LOG_DIR}"
+    FIXTURES_REQUIRED cpp-test-shim-refusal-channels-loss-log
+    LABELS "shim;contract-assertion"
+    FAIL_REGULAR_EXPRESSION "REFUSAL-CHANNELS-FAILURE;SCENARIO-FAILURE"
+  )
+else()
+  message( STATUS "Not registering shim refusal channels: HDF5 backend is disabled" )
+endif()
+
 # Family 6 (docs/SHIM_SUITE_CONVENTION.md S5.6, issue #21): one program
 # exercises the slice-append round trip both across DD versions and against a
 # same-version control. Keep registration in one parameterless function:
