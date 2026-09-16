@@ -109,6 +109,13 @@ read scenario each need:
   chi-squared unit redefinitions now fall through as identical in the map.
   The map wins over the stale quoted count of 32. Each rule derives its expected verdict from the shared
   kind mapping, and a multi-leaf rule reports its first non-agreeing verdict.
+- `cpp-test-shim-cocos-rules` (F4.2, `contract-assertion`, HDF5 builds): reads
+  the same fixture pair through the public HLI and checks every one of the
+  table's 30 map-declared COCOS paths. Each expects the shared kind mapping's
+  `same` verdict. A stopped sign flip therefore reports the comparator's
+  `no-flip` verdict as a failed assertion, naming the rule id, kind and cited
+  map/fixture source. The program counts checked entries against the table's
+  own size, so it cannot report coverage for the two fixture-only negations.
 - `cpp-test-shim-roundtrip-cross-dd` and `cpp-test-shim-roundtrip-same-dd`
   (F6.1--F6.2, `contract-assertion`): two registrations of one program that
   appends a curated `psi_axis` value at a COCOS sign-flip path, then reads the
