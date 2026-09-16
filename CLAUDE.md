@@ -133,13 +133,18 @@ Three test groups:
   `PARTIAL_READ`. It also asserts the refusal was absorbed at the field rather
   than by truncating its surroundings (the enclosing containers survived, a
   field read after it in the same structure arrived, and a field served later
-  in the traversal still agrees with the oracle), and copies the converted
-  read's skipped-path record out before the oracle read runs, since that
-  record resets at the start of each root operation. `tests/shim/
+  in the traversal still agrees with the oracle). The two reads use
+  independent `IdsNs::IDS` objects, so the oracle read cannot reach the
+  converted read's own record; the test still copies that record out first,
+  matching the ordering the shim suite convention states (the record resets
+  at the start of each root operation), so the assertion stays correct if a
+  future revision shares one object across both reads. `tests/shim/
   shim_refusal_match.h` is the shared record-matching predicate: it matches
   the operation, the full DD path (on the tail of the message's `DD path: `
   field, which survives truncation and tolerates a future generator
-  prefixing it), the reason substring, and the refusal-status band.
+  prefixing it), the reason substring, and the refusal-status band. F4.4 as
+  documented also covers the four unit-`redefined` globs, served with no
+  refusal record; that half is not implemented here (issue #19).
 
 Things that bite:
 - Tests pass/fail on **output pattern matching**, not exit code: `FAIL_REGULAR_EXPRESSION`

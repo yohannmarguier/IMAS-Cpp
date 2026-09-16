@@ -119,15 +119,20 @@ read scenario each need:
   the refusal was absorbed at the field, not by truncating its surroundings:
   the enclosing containers survived, a field read after it within the same
   structure arrived, and a field served later in the traversal (equilibrium's
-  root `time`) still agrees with the oracle. The converted read's
-  skipped-path record is copied out before the oracle read runs, since the
-  record resets at the start of each root operation and the oracle read would
-  otherwise erase it. `tests/shim/shim_refusal_match.h` is the shared
+  root `time`) still agrees with the oracle. The two reads use independent
+  `IdsNs::IDS` objects (as F4.1 does), so the oracle read cannot reach the
+  converted read's own record; the program still copies that record out
+  before the oracle read runs, matching the ordering
+  `docs/SHIM_SUITE_CONVENTION.md` S5.4 states -- the record resets at the
+  start of each root operation -- so the assertion stays correct if a future
+  revision shares one object across both reads. `tests/shim/shim_refusal_match.h` is the shared
   record-matching predicate the next refusal-family ticket reuses: it matches
   the operation, the full DD path (on the tail of the message's `DD path: `
   field, so it tolerates truncation and a future generator prefixing that
   field with more context), the reason substring, and the refusal-status
-  band.
+  band. F4.4 as documented (`docs/SHIM_SUITE_CONVENTION.md` S5.4) also covers
+  the four unit-`redefined` globs -- asserted served, with no refusal record
+  -- which this ticket does not implement; that half is issue #19.
 - `cpp-test-shim-roundtrip-cross-dd` and `cpp-test-shim-roundtrip-same-dd`
   (F6.1--F6.2, `contract-assertion`): two registrations of one program that
   appends a curated `psi_axis` value at a COCOS sign-flip path, then reads the

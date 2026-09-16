@@ -6,10 +6,14 @@
 // the shim refuses it and the traversal must tolerate that refusal rather
 // than abort.
 //
-// The two reads run as separate calls, converted before oracle: the refused-
-// path record must be copied out of the converted read before the oracle
-// read runs, because the record resets at the start of each root operation
-// and the oracle read would otherwise erase what this test exists to assert.
+// The two reads run as separate calls, converted before oracle, on two
+// independent IdsNs::IDS objects (as F4.1's test_shim_structural_rules.cpp
+// does), so the oracle read cannot reach convertedIds' own record. This
+// program still copies the converted read's record out before running the
+// oracle read, matching docs/SHIM_SUITE_CONVENTION.md S5.4's stated ordering:
+// the record resets at the start of each root operation, so the same
+// ordering keeps this assertion correct if a future revision reads both
+// pulses through one shared object instead of two.
 #include "ALClasses.h"
 #include "shim_refusal_match.h"
 #include "shim_rule_table.h"
