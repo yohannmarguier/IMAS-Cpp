@@ -97,6 +97,27 @@ Three test groups:
   Both assert exact time-slice/time-base growth, unchanged time mode, and a
   curated COCOS-mapped `psi_axis` round trip. The test is a consistency check,
   not evidence of the native on-disk stored path or sign.
+  `cpp-test-shim-right-only-rules` (issue #17; HDF5 builds) reads DD 3.39.0
+  through the shim and DD 4.1.1 same-version through the public HLI, and
+  asserts every one of the 13 `right_only` rules: the shim serves nothing for
+  a path the newer dictionary introduced, and the oracle side holds a real
+  value, so no assertion passes by both sides being empty. It also carries
+  this family's vacuity demonstration: one right-only rule's converted
+  reading, already established served-nothing by the ordinary check, is run
+  through the same `Compare()` predicate against a real oracle value borrowed
+  from an unrelated structural rule (`identical-vacuum-r0`) and must disagree
+  with that rule's own expectation -- otherwise a shim that served nothing at
+  all would satisfy every right-only rule for the wrong reason. The one
+  right-only path indexed through an array-of-structures element
+  (`constraints/j_parallel`) guards the converted side's element access on
+  its own extent rather than assuming it was resized, since it has no DD 3
+  source to resize it from. Per rule, a converted reading that is neither
+  absent nor `OnlyOracle` is printed as a named finding (docs/
+  SHIM_SUITE_CONVENTION.md S2.1) distinct from the ordinary rule-mismatch
+  message, since a field that reads back as a plausible-looking value
+  instead of the invalid sentinel is worse than a wrong one and must not be
+  routed around as an unremarkable failure; see `tests/shim/README.md` for
+  what was observed on this HLI.
 
 Things that bite:
 - Tests pass/fail on **output pattern matching**, not exit code: `FAIL_REGULAR_EXPRESSION`
