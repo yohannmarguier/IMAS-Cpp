@@ -194,10 +194,10 @@ endfunction()
 # A write scenario's private fixture copy (docs/SHIM_SUITE_CONVENTION.md
 # S3.3): "A write test MUST run against a private copy made fresh before
 # each run, so scenarios can run in parallel and a failed run leaves no
-# poison." No test below calls this yet -- the round-trip, torn-write and
-# full-put-stamp write scenarios are issue #24's -- but the helper ships
-# with this ticket for the same reason al_cpp_shim_private_loss_log did with
-# #10: the family that needs it should need nothing else from the scaffold.
+# poison." The round-trip pair below uses it; torn-write and full-put-stamp
+# remain issue #24's. The helper ships with this ticket for the same reason
+# al_cpp_shim_private_loss_log did with #10: the family that needs it should
+# need nothing else from the scaffold.
 function( al_cpp_shim_private_fixture_copy test_name source out_var )
   set( _dir "${CMAKE_CURRENT_BINARY_DIR}/${test_name}-fixture" )
   add_test( NAME ${test_name}-fixture-copy
@@ -377,4 +377,76 @@ else()
       cpp-test-shim-stamp-mismatch-no-artifact stamp-mismatch-no-artifact
       "${AL_SHIM_STAMP_MISMATCH_FIXTURE}" TRUE )
   endif()
+endif()
+
+# Family 6 (docs/SHIM_SUITE_CONVENTION.md S5.6, issue #21): one program
+# exercises the slice-append round trip both across DD versions and against a
+# same-version control. Keep registration in one parameterless function:
+# these two executions are one argument, and neither may be independently
+# selected out of the suite.
+if( NOT AL_BACKEND_HDF5 )
+  message( STATUS "Not registering shim round-trip scenarios: HDF5 backend is disabled" )
+else()
+  add_executable( cpp-test-shim-roundtrip test_shim_roundtrip.cpp )
+  target_include_directories( cpp-test-shim-roundtrip PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} )
+  target_link_libraries( cpp-test-shim-roundtrip PRIVATE al-cpp )
+
+  function( al_cpp_shim_add_roundtrip_pair )
+    set( _cross_test cpp-test-shim-roundtrip-cross-dd )
+    set( _same_test cpp-test-shim-roundtrip-same-dd )
+    set( _pair_test cpp-test-shim-roundtrip-pair )
+
+    # The paired fixture owns the only two executable invocations.  The named
+    # CTest cases consume its per-control result markers, so selection of
+    # either case still runs both controls without duplicating either one.
+    al_cpp_shim_private_fixture_copy( ${_pair_test}-cross
+      "${AL_SHIM_FIXTURE_ROOT}/dd-3.39.0" _pair_cross_fixture )
+    al_cpp_shim_private_fixture_copy( ${_pair_test}-same
+      "${AL_SHIM_FIXTURE_ROOT}/dd-4.1.1" _pair_same_fixture )
+    al_cpp_shim_private_loss_log( ${_pair_test}-cross _pair_cross_loss_log_dir )
+    al_cpp_shim_private_loss_log( ${_pair_test}-same _pair_same_loss_log_dir )
+
+    add_test( NAME ${_pair_test}
+      COMMAND ${CMAKE_COMMAND}
+        -D "PROGRAM=$<TARGET_FILE:cpp-test-shim-roundtrip>"
+        -D "CROSS_FIXTURE=${_pair_cross_fixture}"
+        -D "CROSS_LOSS_LOG_DIR=${_pair_cross_loss_log_dir}"
+        -D "CROSS_RESULT_FILE=${_pair_cross_loss_log_dir}/roundtrip-passed"
+        -D "SAME_FIXTURE=${_pair_same_fixture}"
+        -D "SAME_LOSS_LOG_DIR=${_pair_same_loss_log_dir}"
+        -D "SAME_RESULT_FILE=${_pair_same_loss_log_dir}/roundtrip-passed"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/run_roundtrip_pair.cmake"
+    )
+    set_tests_properties( ${_pair_test} PROPERTIES
+      FIXTURES_SETUP ${_pair_test}
+      FIXTURES_REQUIRED "${_pair_test}-cross-fixture;${_pair_test}-same-fixture;${_pair_test}-cross-loss-log;${_pair_test}-same-loss-log"
+      LABELS "shim;contract-assertion"
+      ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT}"
+      FAIL_REGULAR_EXPRESSION "ROUNDTRIP-FAILURE"
+    )
+
+    add_test( NAME ${_cross_test}
+      COMMAND ${CMAKE_COMMAND}
+        -D "RESULT_FILE=${_pair_cross_loss_log_dir}/roundtrip-passed"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/check_roundtrip_result.cmake"
+    )
+    set_tests_properties( ${_cross_test} PROPERTIES
+      FIXTURES_REQUIRED "${_pair_test}"
+      LABELS "shim;contract-assertion"
+      FAIL_REGULAR_EXPRESSION "ROUNDTRIP-FAILURE"
+    )
+
+    add_test( NAME ${_same_test}
+      COMMAND ${CMAKE_COMMAND}
+        -D "RESULT_FILE=${_pair_same_loss_log_dir}/roundtrip-passed"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/check_roundtrip_result.cmake"
+    )
+    set_tests_properties( ${_same_test} PROPERTIES
+      FIXTURES_REQUIRED "${_pair_test}"
+      LABELS "shim;contract-assertion"
+      FAIL_REGULAR_EXPRESSION "ROUNDTRIP-FAILURE"
+    )
+  endfunction()
+
+  al_cpp_shim_add_roundtrip_pair()
 endif()

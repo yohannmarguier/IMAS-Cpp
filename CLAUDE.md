@@ -108,6 +108,15 @@ Three test groups:
   contract-assertion red list; update it with a reviewed cause and owner
   whenever a contract assertion is red, and identify the test host and loaded
   IMAS-Core whenever recording an observed empty list.
+  `cpp-test-shim-roundtrip-cross-dd` and `cpp-test-shim-roundtrip-same-dd`
+  are paired registrations of one slice-append program (issue #21): each has
+  a fresh private fixture and loss-log directory; the DD 3.39.0 run explicitly
+  permits `PARTIAL_READ`, while the DD 4.1.1 control requires clean success.
+  Both assert exact time-slice/time-base growth, unchanged time mode, and a
+  curated COCOS-mapped `psi_axis` round trip. The test is a consistency check,
+  not evidence of the native on-disk stored path or sign. Its paired CTest
+  fixture owns exactly the two program runs before either named case can
+  report a result.
 
 Things that bite:
 - Tests pass/fail on **output pattern matching**, not exit code: `FAIL_REGULAR_EXPRESSION`
