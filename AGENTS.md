@@ -107,7 +107,21 @@ Three test groups:
   `getSkippedPaths()`, and asserts the torn shape on read-back: the container
   one element longer, the mapped field readable, the refused field still
   empty. It pins an accepted limitation (no rollback on a refused write)
-  rather than a requirement of the shim.
+  rather than a requirement of the shim. `cpp-test-shim-full-put-stamp`
+  (issue #23, `contract-assertion`): against a fresh private copy of the
+  DD 3.39.0 pulse, reads the occurrence, sets a marker value at
+  `vacuum_toroidal_field/r0` (the field the generated traversal reaches
+  right after `ids_properties`), and issues a full `put()` (never
+  `putSlice()`, whose body never reaches the DD-version stamp). A full
+  put's own `deleteAll()` refuses the delete that would remove
+  `ids_properties/version_put/data_dictionary` while data remains; `put()`
+  then refuses the stamp's own rewrite (hardcoded to this HLI's compiled
+  DD version) under the mismatch too. Both refusals are asserted on their
+  own counter, independent of the derived `PARTIAL_PUT` status, because
+  either refusal alone already makes that status partial. Read-back then
+  confirms the marker round-tripped and the stamp still names the fixture's
+  stored `3.39.0`, never the HLI's `4.1.1`. Unlike F6.3, this pins a
+  requirement of the shim, not an accepted limitation.
 
 Things that bite:
 - Tests pass/fail on **output pattern matching**, not exit code: `FAIL_REGULAR_EXPRESSION`

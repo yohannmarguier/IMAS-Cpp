@@ -142,11 +142,40 @@ families under `docs/SHIM_SUITE_CONVENTION.md` S5.
   regardless, because the array-of-structures open widens it before any leaf
   write runs.
 
+- `cpp-test-shim-full-put-stamp` (F6.4, `contract-assertion`): against a
+  fresh private copy of the older-DD pulse, reads the occurrence, sets a
+  marker value at `vacuum_toroidal_field/r0` -- the field the generated
+  traversal reaches immediately after `ids_properties` -- and issues a
+  **full put** (`put()`, not `putSlice()`; a slice put has an empty body for
+  `ids_properties/version_put/data_dictionary`, the DD-version stamp, and
+  never reaches it at all). A full put's `put()` opens by calling its own
+  `deleteAll()`, which deletes every other field of the previous occurrence
+  but refuses the delete that would remove the stamp while data remains;
+  `put()` then rewrites every field, including the stamp itself hardcoded to
+  this HLI's own compiled DD version, whose write is refused too under the
+  mismatch. Asserts the refused delete and the refused write each on their
+  own counter -- either refusal alone already makes the summary status
+  partial, so the status cannot say whether both seams, or only one,
+  refused -- then asserts the status as the derived `PARTIAL_PUT` outcome
+  it is, and, on the read-back, that the marker field reads back (proving
+  the traversal finished) and the stamp still names the fixture's own
+  `3.39.0`, never this HLI's `4.1.1`. `verify_full_put_stamp.cmake`
+  additionally asserts both `REFUSED DELETE:
+  ids_properties/version_put/data_dictionary` and `REFUSED WRITE:
+  ids_properties/version_put/data_dictionary` (`IdsNs::Ids::mustAbort`,
+  `src/IdsDef.cpp`) reached the program's standard output and not its
+  standard error. Unlike F6.3, this pins a **requirement** of the shim, not
+  an accepted limitation.
+
 IMAS-Core is pinned to a fork commit carrying the path-aware HDF5 delete fix
 (IMAS-Core #63/#64) whenever `AL_USE_MULTIVERSION_SHIM=ON` -- see the comment
 at the top of the repository's `CMakeLists.txt`. Without it, `F6.4
-full-put-stamp` (not yet implemented here) would be red for a reason in
-neither this repository nor the shim.
+full-put-stamp` would be red for a reason in neither this repository nor the
+shim: the first delete a full put issues would destroy the whole occurrence
+instead of sparing the stamp, the refused stamp delete would then protect
+nothing, the stamp probe that follows would find no occurrence, an absent
+stamp is presumed to match, no conversion is armed, and every write becomes
+an untranslated forward.
 
 ## Running the labels
 

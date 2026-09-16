@@ -194,10 +194,10 @@ endfunction()
 # A write scenario's private fixture copy (docs/SHIM_SUITE_CONVENTION.md
 # S3.3): "A write test MUST run against a private copy made fresh before
 # each run, so scenarios can run in parallel and a failed run leaves no
-# poison." The round-trip pair below uses it; torn-write and full-put-stamp
-# remain issue #24's. The helper ships with this ticket for the same reason
-# al_cpp_shim_private_loss_log did with #10: the family that needs it should
-# need nothing else from the scaffold.
+# poison." The round-trip pair below uses it; torn-write (#22) and
+# full-put-stamp (#23) reuse it in turn. The helper ships with this ticket
+# for the same reason al_cpp_shim_private_loss_log did with #10: the family
+# that needs it should need nothing else from the scaffold.
 function( al_cpp_shim_private_fixture_copy test_name source out_var )
   set( _dir "${CMAKE_CURRENT_BINARY_DIR}/${test_name}-fixture" )
   add_test( NAME ${test_name}-fixture-copy
@@ -474,5 +474,31 @@ else()
     LABELS "shim;behaviour-pin"
     ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT};IMAS_MVDD_LOSS_LOG_DIR=${_torn_write_loss_log_dir}"
     FAIL_REGULAR_EXPRESSION "TORN-WRITE-FAILURE|SCENARIO-FAILURE"
+  )
+
+  # F6.4 `full-put-stamp` (docs/SHIM_SUITE_CONVENTION.md S5.6, issue #23): a
+  # `contract-assertion` -- unlike F6.3, this pins a requirement of the shim
+  # (the stored DD-version stamp MUST survive a mismatched full put), not an
+  # accepted limitation.
+  add_executable( cpp-test-shim-full-put-stamp test_shim_full_put_stamp.cpp )
+  target_include_directories( cpp-test-shim-full-put-stamp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} )
+  target_link_libraries( cpp-test-shim-full-put-stamp PRIVATE al-cpp )
+
+  al_cpp_shim_private_fixture_copy( cpp-test-shim-full-put-stamp
+    "${AL_SHIM_FIXTURE_ROOT}/dd-3.39.0" _full_put_stamp_fixture )
+  al_cpp_shim_private_loss_log( cpp-test-shim-full-put-stamp _full_put_stamp_loss_log_dir )
+
+  add_test( NAME cpp-test-shim-full-put-stamp
+    COMMAND ${CMAKE_COMMAND}
+      -D "COMMAND_TO_RUN=$<TARGET_FILE:cpp-test-shim-full-put-stamp>;${_full_put_stamp_fixture}"
+      -D "EXPECTED_STDOUT_SUBSTRINGS=REFUSED DELETE: ids_properties/version_put/data_dictionary;REFUSED WRITE: ids_properties/version_put/data_dictionary"
+      -D "LOSS_LOG_DIR=${_full_put_stamp_loss_log_dir}"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_full_put_stamp.cmake"
+  )
+  set_tests_properties( cpp-test-shim-full-put-stamp PROPERTIES
+    FIXTURES_REQUIRED "cpp-test-shim-full-put-stamp-fixture;cpp-test-shim-full-put-stamp-loss-log"
+    LABELS "shim;contract-assertion"
+    ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT};IMAS_MVDD_LOSS_LOG_DIR=${_full_put_stamp_loss_log_dir}"
+    FAIL_REGULAR_EXPRESSION "FULL-PUT-STAMP-FAILURE|SCENARIO-FAILURE"
   )
 endif()
