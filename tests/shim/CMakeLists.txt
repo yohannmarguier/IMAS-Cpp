@@ -380,29 +380,33 @@ else()
       cpp-test-shim-stamp-mismatch-no-artifact stamp-mismatch-no-artifact
       "${AL_SHIM_STAMP_MISMATCH_FIXTURE}" TRUE )
 
-    # Family 4.1 (docs/SHIM_SUITE_CONVENTION.md S5.4, issue #15): compare
-    # each structural conversion rule against the same equilibrium read from
-    # the DD 4.1.1 oracle fixture.  The program owns the rule table and the
-    # public-HLI reads; CTest supplies the immutable fixture root and private
-    # loss-log directory that make the cross-version read isolated.
-    add_executable( cpp-test-shim-structural-rules test_shim_structural_rules.cpp )
-    target_include_directories( cpp-test-shim-structural-rules PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} )
-    target_link_libraries( cpp-test-shim-structural-rules PRIVATE al-cpp )
-    al_cpp_shim_private_loss_log( cpp-test-shim-structural-rules
-      AL_SHIM_STRUCTURAL_LOSS_LOG_DIR )
-    add_test( NAME cpp-test-shim-structural-rules
-      COMMAND ${CMAKE_COMMAND}
-        -D "FIXTURE_ROOT=${AL_SHIM_FIXTURE_ROOT}"
-        -D "COMMAND_TO_RUN=$<TARGET_FILE:cpp-test-shim-structural-rules>;${AL_SHIM_FIXTURE_ROOT}"
-        -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_fixture_unchanged.cmake"
-    )
-    set_tests_properties( cpp-test-shim-structural-rules PROPERTIES
-      ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT};IMAS_MVDD_LOSS_LOG_DIR=${AL_SHIM_STRUCTURAL_LOSS_LOG_DIR}"
-      FIXTURES_REQUIRED cpp-test-shim-structural-rules-loss-log
-      LABELS "shim;contract-assertion"
-      FAIL_REGULAR_EXPRESSION "STRUCTURAL-FAILURE;SCENARIO-FAILURE"
-    )
   endif()
+endif()
+
+# Family 4.1 (docs/SHIM_SUITE_CONVENTION.md S5.4, issue #15): compare each
+# structural conversion rule against the same equilibrium read from the DD
+# 4.1.1 oracle fixture.  This read-only family needs HDF5, but not the optional
+# Python/h5py tooling used solely to derive stamp variants above.
+if( AL_BACKEND_HDF5 )
+  add_executable( cpp-test-shim-structural-rules test_shim_structural_rules.cpp )
+  target_include_directories( cpp-test-shim-structural-rules PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} )
+  target_link_libraries( cpp-test-shim-structural-rules PRIVATE al-cpp )
+  al_cpp_shim_private_loss_log( cpp-test-shim-structural-rules
+    AL_SHIM_STRUCTURAL_LOSS_LOG_DIR )
+  add_test( NAME cpp-test-shim-structural-rules
+    COMMAND ${CMAKE_COMMAND}
+      -D "FIXTURE_ROOT=${AL_SHIM_FIXTURE_ROOT}"
+      -D "COMMAND_TO_RUN=$<TARGET_FILE:cpp-test-shim-structural-rules>;${AL_SHIM_FIXTURE_ROOT}"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_fixture_unchanged.cmake"
+  )
+  set_tests_properties( cpp-test-shim-structural-rules PROPERTIES
+    ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT};IMAS_MVDD_LOSS_LOG_DIR=${AL_SHIM_STRUCTURAL_LOSS_LOG_DIR}"
+    FIXTURES_REQUIRED cpp-test-shim-structural-rules-loss-log
+    LABELS "shim;contract-assertion"
+    FAIL_REGULAR_EXPRESSION "STRUCTURAL-FAILURE;SCENARIO-FAILURE"
+  )
+else()
+  message( STATUS "Not registering shim structural rules: HDF5 backend is disabled" )
 endif()
 
 # Family 6 (docs/SHIM_SUITE_CONVENTION.md S5.6, issue #21): one program

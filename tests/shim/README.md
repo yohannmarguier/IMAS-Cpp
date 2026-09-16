@@ -98,14 +98,16 @@ read scenario each need:
   `beta_tor_norm` remains absent, and its source header records why its
   otherwise indistinguishable result must remain a separate scenario.
 
-- `cpp-test-shim-structural-rules` (F4.1, `contract-assertion`): reads the
+- `cpp-test-shim-structural-rules` (F4.1, `contract-assertion`, HDF5 builds): reads the
   DD 3.39.0 fixture through the shim and the DD 4.1.1 fixture same-version,
   then checks all 23 structural rules at the public C++ HLI. Its hand-authored
   table has 23 structural, 30 COCOS, 13 right-only, and 5 refusal entries;
   every entry cites the conversion map or fixture provenance. The transcription
   audit records the externally reachable map's unresolved includes (including
-  common renames) and the map's actual 30 COCOS flips, rather than the stale
-  quoted count of 32. Each rule derives its expected verdict from the shared
+  common renames), its actual 30 COCOS flips, and the two fixture-only
+  negations inside DD-4-only structures. It also records that four historical
+  chi-squared unit redefinitions now fall through as identical in the map.
+  The map wins over the stale quoted count of 32. Each rule derives its expected verdict from the shared
   kind mapping, and a multi-leaf rule reports its first non-agreeing verdict.
 - `cpp-test-shim-roundtrip-cross-dd` and `cpp-test-shim-roundtrip-same-dd`
   (F6.1--F6.2, `contract-assertion`): two registrations of one program that

@@ -115,13 +115,15 @@ Three test groups:
   Both assert exact time-slice/time-base growth, unchanged time mode, and a
   curated COCOS-mapped `psi_axis` round trip. The test is a consistency check,
   not evidence of the native on-disk stored path or sign.
-  `cpp-test-shim-structural-rules` (issue #15) reads DD 3.39.0 through the
+  `cpp-test-shim-structural-rules` (issue #15; HDF5 builds) reads DD 3.39.0 through the
   shim and DD 4.1.1 same-version through the public HLI, asserting every rule
   in its 23-entry structural table. `tests/shim/shim_rule_table.h` also
   records the 30 COCOS, 13 right-only, and 5 refusal rules, each with a
   map/fixture citation. The cited table is deliberately hand-authored: the
   external map has unresolved includes that carry common renames. Its audit
-  records the map's 30 flips (not the stale quoted 32); `shim_rule_check.h`
+  records the map's 30 flips (not the stale quoted 32), why the two
+  fixture-only negations remain right-only, and why four historical unit
+  redefinitions now fall through as identical; `shim_rule_check.h`
   derives every expectation from the sole kind-to-verdict mapping and counts
   checked entries against the table size.
 

@@ -1,12 +1,26 @@
 // Hand-authored conversion-rule tables for the shim conformance suite.
 //
 // Transcribed and re-verified against IMAS-Multiversion-DD-Loader's
-// docs/3.39.0--4.1.1.xml on 2026-09-15.  The external copy deliberately has
+// docs/3.39.0--4.1.1.xml on 2026-09-15.  Its externally reachable copy has
 // unresolved error-model-3to4.xml and naming-3to4.xml includes; the latter
 // holds common cross-IDS renames.  Generating this table by following only
-// resolvable includes would silently omit a rename family, so this remains a
-// hand-authored, compile-time table.  The map has 30, not the stale quoted 32,
-// COCOS <flip> entries; its counts, rather than ticket counts, govern here.
+// resolvable includes would silently omit that rename family, so this remains
+// a hand-authored, compile-time table.
+//
+// Audit disagreements retained here: the map contains 30 <cocos><flip>
+// entries, while the fixture README and the ticket say 32.  The two extra
+// fixture-only negations are contour_tree/node/psi and
+// constraints/j_parallel/position/psi; both are inside right-only DD 4
+// structures with no DD 3 source, so they are intentionally represented by
+// the right-only table rather than invented COCOS map rules.  The map count
+// wins.  cocos-p1d-j-phi and cocos-p2d-j-phi also use their fold map rules,
+// recorded in their individual citations below.
+//
+// The fixture/contract still records four chi-squared unit redefinitions, but
+// the current map says its matching <redefine> globs were removed after
+// review: these paths now fall through to identical and the shim leaves their
+// values unchanged.  Keep the four entries as the cited historical/unit
+// record, but the map's current Same verdict wins over a refusal.
 #pragma once
 
 #include "shim_comparator.h"
@@ -129,10 +143,12 @@ inline constexpr std::array<Rule, 30> kCocosRules{{
     SHIM_COCOS_RULE("cocos-p1d-dvolume-dpsi", "time_slice/profiles_1d/dvolume_dpsi"),
     SHIM_COCOS_RULE("cocos-p1d-f-df-dpsi", "time_slice/profiles_1d/f_df_dpsi"),
     SHIM_COCOS_RULE("cocos-p1d-j-parallel", "time_slice/profiles_1d/j_parallel"),
-    SHIM_COCOS_RULE("cocos-p1d-j-phi", "time_slice/profiles_1d/j_phi"),
+    {"cocos-p1d-j-phi", Kind::Cocos, "time_slice/profiles_1d/j_phi",
+     "map <cocos> flip path=time_slice/profiles_1d/j_phi; also map rule fold-p1d-j; fixtures README COCOS 11 -> 17 and Folds"},
     SHIM_COCOS_RULE("cocos-p1d-psi", "time_slice/profiles_1d/psi"),
     SHIM_COCOS_RULE("cocos-p2d-j-parallel", "time_slice/profiles_2d/j_parallel"),
-    SHIM_COCOS_RULE("cocos-p2d-j-phi", "time_slice/profiles_2d/j_phi"),
+    {"cocos-p2d-j-phi", Kind::Cocos, "time_slice/profiles_2d/j_phi",
+     "map <cocos> flip path=time_slice/profiles_2d/j_phi; also map rule fold-p2d-j; fixtures README COCOS 11 -> 17 and Folds"},
     SHIM_COCOS_RULE("cocos-p2d-psi", "time_slice/profiles_2d/psi"),
 }};
 #undef SHIM_COCOS_RULE
@@ -175,22 +191,22 @@ inline constexpr std::array<Rule, 5> kRefusalRules{{
      "map rule retype-coordinates-type rel=retyped shape=int_1d:struct_array; contract 8.2"},
     {"redefine-x-point-chi-sq-r", Kind::Redefined,
      "time_slice/constraints/x_point/chi_squared_r",
-     "map redefine glob time_slice/constraints/x_point/chi_squared_r m -> m^-2"},
+     "fixture/contract unit change m -> m^-2; map audit: redefine glob removed, falls through identical"},
     {"redefine-x-point-chi-sq-z", Kind::Redefined,
      "time_slice/constraints/x_point/chi_squared_z",
-     "map redefine glob time_slice/constraints/x_point/chi_squared_z m -> m^-2"},
+     "fixture/contract unit change m -> m^-2; map audit: redefine glob removed, falls through identical"},
     {"redefine-strike-pt-chi-sq-r", Kind::Redefined,
      "time_slice/constraints/strike_point/chi_squared_r",
-     "map redefine glob time_slice/constraints/strike_point/chi_squared_r m -> m^-2"},
+     "fixture/contract unit change m -> m^-2; map audit: redefine glob removed, falls through identical"},
     {"redefine-strike-pt-chi-sq-z", Kind::Redefined,
      "time_slice/constraints/strike_point/chi_squared_z",
-     "map redefine glob time_slice/constraints/strike_point/chi_squared_z m -> m^-2"},
+     "fixture/contract unit change m -> m^-2; map audit: redefine glob removed, falls through identical"},
 }};
 
 inline constexpr const char* kRetypedRefusalReason =
     "this path's container changed shape and cannot be served";
-inline constexpr const char* kRedefinedRefusalReason =
-    "this path's unit was redefined and cannot be converted";
+inline constexpr const char* kRedefinedAuditReason =
+    "the current map leaves this unit-redefined path unchanged";
 
 inline constexpr const std::array<Rule, 23>& structuralRules() { return kStructuralRules; }
 inline constexpr const std::array<Rule, 30>& cocosRules() { return kCocosRules; }
