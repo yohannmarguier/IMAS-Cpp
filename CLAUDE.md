@@ -117,7 +117,12 @@ Three test groups:
   not evidence of the native on-disk stored path or sign.
   `cpp-test-shim-structural-rules` (issue #15; HDF5 builds) reads DD 3.39.0 through the
   shim and DD 4.1.1 same-version through the public HLI, asserting every rule
-  in its 23-entry structural table. `tests/shim/shim_rule_table.h` also
+  in its 23-entry structural table. `cpp-test-shim-cocos-rules` (issue #16;
+  HDF5 builds) makes the same paired reads and asserts every entry in the
+  map-declared 30-path COCOS table: a correct conversion is `Same`, so a
+  stopped flip reaches the failure-severity `NoFlip` verdict. Each failure
+  names the rule id, kind, and citation; the shared loop counts checks against
+  the table's own size. `tests/shim/shim_rule_table.h` also
   records the 30 COCOS, 13 right-only, and 5 refusal rules, each with a
   map/fixture citation. The cited table is deliberately hand-authored: the
   external map has unresolved includes that carry common renames. Its audit

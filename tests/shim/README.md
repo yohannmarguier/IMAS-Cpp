@@ -5,7 +5,7 @@ This directory holds the Tier-1 shim conformance suite described in
 `AL_USE_MULTIVERSION_SHIM=ON`; with shim mode off the registered test list is
 exactly what it was before this suite existed.
 
-## Scope so far (issues #10, #11, #12, #13, #14, #15, #17, #18, #19, #20, #21)
+## Scope so far (issues #10, #11, #12, #13, #14, #15, #16, #17, #18, #19, #20, #21)
 
 Issue #10 registered the suite's scaffold and its first test.
 Issue #11 added the shared comparison oracle every fixture-driven family
@@ -109,6 +109,13 @@ read scenario each need:
   chi-squared unit redefinitions now fall through as identical in the map.
   The map wins over the stale quoted count of 32. Each rule derives its expected verdict from the shared
   kind mapping, and a multi-leaf rule reports its first non-agreeing verdict.
+- `cpp-test-shim-cocos-rules` (F4.2, `contract-assertion`, HDF5 builds): reads
+  the same fixture pair through the public HLI and checks every one of the
+  table's 30 map-declared COCOS paths. Each expects the shared kind mapping's
+  `same` verdict. A stopped sign flip therefore reports the comparator's
+  `no-flip` verdict as a failed assertion, naming the rule id, kind and cited
+  map/fixture source. The program counts checked entries against the table's
+  own size, so it cannot report coverage for the two fixture-only negations.
 - `cpp-test-shim-right-only-rules` (F4.3, `contract-assertion`, HDF5 builds): reads the
   same two fixtures as F4.1 and checks all 13 `right_only` rules in the shared
   table. Expects `ONLY_ORACLE` per rule -- the shim correctly serves nothing,
