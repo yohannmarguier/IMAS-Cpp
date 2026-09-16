@@ -93,9 +93,9 @@ set_tests_properties( cpp-test-shim-comparison PROPERTIES
 # wraps the wrong reading in each. Counts the named sides this ticket's own
 # comparator test contributes; later tickets' rule programs raise the floor
 # as they add Compare() call sites of their own.
-# Eleven sides are contributed by the comparator self-test; F4.1 adds the
-# fixture-driven comparison site's twelfth named pair.
-set( AL_SHIM_VERDICT_ORIENTATION_FLOOR 12 )
+# Eleven sides are contributed by the comparator self-test; F4.1 and F4.3 add
+# their own fixture-driven comparison call sites on top of that.
+set( AL_SHIM_VERDICT_ORIENTATION_FLOOR 61 )
 add_test( NAME cpp-test-shim-verdict-orientation
   COMMAND ${CMAKE_COMMAND}
     -D "SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}"
@@ -407,6 +407,36 @@ if( AL_BACKEND_HDF5 )
   )
 else()
   message( STATUS "Not registering shim structural rules: HDF5 backend is disabled" )
+endif()
+
+# Family 4.3 (docs/SHIM_SUITE_CONVENTION.md S5.4, issue #17): the 13 paths the
+# newer dictionary introduced. Expects ONLY_ORACLE per rule -- the shim
+# correctly serves nothing, and the oracle holds a real value proving the
+# comparison is not vacuous -- plus the D6 vacuity demonstration required of
+# this family: a served-nothing reading must fail a real structural rule's own
+# agreement expectation, or a shim that served nothing at all would satisfy
+# every right-only rule for the wrong reason. Shares the same two-read shape
+# and HDF5-only gating as F4.1.
+if( AL_BACKEND_HDF5 )
+  add_executable( cpp-test-shim-right-only-rules test_shim_right_only.cpp )
+  target_include_directories( cpp-test-shim-right-only-rules PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} )
+  target_link_libraries( cpp-test-shim-right-only-rules PRIVATE al-cpp )
+  al_cpp_shim_private_loss_log( cpp-test-shim-right-only-rules
+    AL_SHIM_RIGHT_ONLY_LOSS_LOG_DIR )
+  add_test( NAME cpp-test-shim-right-only-rules
+    COMMAND ${CMAKE_COMMAND}
+      -D "FIXTURE_ROOT=${AL_SHIM_FIXTURE_ROOT}"
+      -D "COMMAND_TO_RUN=$<TARGET_FILE:cpp-test-shim-right-only-rules>;${AL_SHIM_FIXTURE_ROOT}"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_fixture_unchanged.cmake"
+  )
+  set_tests_properties( cpp-test-shim-right-only-rules PROPERTIES
+    ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT};IMAS_MVDD_LOSS_LOG_DIR=${AL_SHIM_RIGHT_ONLY_LOSS_LOG_DIR}"
+    FIXTURES_REQUIRED cpp-test-shim-right-only-rules-loss-log
+    LABELS "shim;contract-assertion"
+    FAIL_REGULAR_EXPRESSION "RIGHT-ONLY-FAILURE;SCENARIO-FAILURE"
+  )
+else()
+  message( STATUS "Not registering shim right-only rules: HDF5 backend is disabled" )
 endif()
 
 # Family 4.4 (docs/SHIM_SUITE_CONVENTION.md S5.4, issue #18): the map's one

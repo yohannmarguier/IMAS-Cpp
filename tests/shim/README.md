@@ -5,7 +5,7 @@ This directory holds the Tier-1 shim conformance suite described in
 `AL_USE_MULTIVERSION_SHIM=ON`; with shim mode off the registered test list is
 exactly what it was before this suite existed.
 
-## Scope so far (issues #10, #11, #12, #13, #14, #15, #18, #19, #20, #21)
+## Scope so far (issues #10, #11, #12, #13, #14, #15, #17, #18, #19, #20, #21)
 
 Issue #10 registered the suite's scaffold and its first test.
 Issue #11 added the shared comparison oracle every fixture-driven family
@@ -109,6 +109,33 @@ read scenario each need:
   chi-squared unit redefinitions now fall through as identical in the map.
   The map wins over the stale quoted count of 32. Each rule derives its expected verdict from the shared
   kind mapping, and a multi-leaf rule reports its first non-agreeing verdict.
+- `cpp-test-shim-right-only-rules` (F4.3, `contract-assertion`, HDF5 builds): reads the
+  same two fixtures as F4.1 and checks all 13 `right_only` rules in the shared
+  table. Expects `ONLY_ORACLE` per rule -- the shim correctly serves nothing,
+  and the oracle holds a real value proving the comparison is not vacuous.
+  Carries the D6 vacuity demonstration this family requires: one right-only
+  rule's converted reading, already established served-nothing by the
+  ordinary check above it, is put through the same `Compare()` predicate
+  against a real oracle value taken from an unrelated structural-table entry
+  (`identical-vacuum-r0`), and must disagree with that entry's own agreement
+  expectation. Without that demonstration, a shim serving nothing at all
+  would satisfy every right-only rule for the wrong reason. The one
+  right-only path this test indexes through an array-of-structures element
+  (`constraints/j_parallel`) guards the converted side's element access on
+  its own extent instead of assuming it was resized, since the path has no
+  DD 3 source to resize it from. Per docs/SHIM_SUITE_CONVENTION.md S2.1, a
+  converted reading that turns out neither absent nor `ONLY_ORACLE` is
+  printed as its own named finding, separate from the ordinary rule-mismatch
+  message: a field reading back as a plausible-looking value instead of the
+  invalid sentinel is a worse outcome than a wrong one and this suite's job
+  is to say so, not fold it into an unremarkable failure. IMAS-Fortran found
+  exactly this on its own HLI (five `right_only` paths reading back as
+  uninitialised memory, one as four ASCII spaces landing on an integer
+  field). On this C++ HLI, on `MacBook-Pro-de-Yohann.local` (Darwin 25.6.0,
+  arm64) on 2026-09-16, every one of the 13 `right_only` paths read back as
+  the DD invalid sentinel (`EMPTY_DOUBLE`/`EMPTY_INT`) on the converted side
+  -- no finding was printed. Re-run the test before treating that as a
+  statement about another build or host.
 - `cpp-test-shim-refusal-channels` (F4.4, `contract-assertion`, HDF5 builds): the same two
   reads as F4.1, asserting that the map's `retyped` rule --
   `grids_ggd/grid/space/coordinates_type` (an int array in DD 3.39.0, an array
