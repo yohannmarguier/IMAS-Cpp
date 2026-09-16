@@ -436,6 +436,36 @@ else()
   message( STATUS "Not registering shim refusal channels: HDF5 backend is disabled" )
 endif()
 
+# Family 5.1 (issue #20): require both a partial read and the exact public
+# loss-log set, with the historical redefinition defects reported separately.
+add_test( NAME cpp-test-shim-loss-log-harness
+  COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/check_nested_loss_harness.cmake"
+)
+set_tests_properties( cpp-test-shim-loss-log-harness PROPERTIES
+  LABELS "shim;harness"
+  FAIL_REGULAR_EXPRESSION "LOSS-HARNESS-FAILURE"
+)
+if( AL_BACKEND_HDF5 )
+  add_executable( cpp-test-shim-nested-loss test_shim_nested_loss.cpp )
+  target_link_libraries( cpp-test-shim-nested-loss PRIVATE al-cpp )
+  al_cpp_shim_private_loss_log( cpp-test-shim-nested-loss AL_SHIM_NESTED_LOSS_LOG_DIR )
+  add_test( NAME cpp-test-shim-nested-loss
+    COMMAND ${CMAKE_COMMAND}
+      -D "FIXTURE_ROOT=${AL_SHIM_FIXTURE_ROOT}/dd-3.39.0"
+      -D "LOSS_LOG_DIR=${AL_SHIM_NESTED_LOSS_LOG_DIR}"
+      -D "COMMAND_TO_RUN=$<TARGET_FILE:cpp-test-shim-nested-loss>;${AL_SHIM_FIXTURE_ROOT}/dd-3.39.0"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/check_nested_loss_log.cmake"
+  )
+  set_tests_properties( cpp-test-shim-nested-loss PROPERTIES
+    ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT};IMAS_MVDD_LOSS_LOG_DIR=${AL_SHIM_NESTED_LOSS_LOG_DIR}"
+    FIXTURES_REQUIRED cpp-test-shim-nested-loss-loss-log
+    LABELS "shim;contract-assertion"
+    FAIL_REGULAR_EXPRESSION "NESTED-LOSS-FAILURE;LOSS-LOG-FAILURE;LOSS-LOG-REDEFINITION-FAILURE;SCENARIO-FAILURE"
+  )
+else()
+  message( STATUS "Not registering shim nested loss: HDF5 backend is disabled" )
+endif()
+
 # Family 6 (docs/SHIM_SUITE_CONVENTION.md S5.6, issue #21): one program
 # exercises the slice-append round trip both across DD versions and against a
 # same-version control. Keep registration in one parameterless function:

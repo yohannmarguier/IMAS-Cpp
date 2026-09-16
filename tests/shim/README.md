@@ -5,7 +5,7 @@ This directory holds the Tier-1 shim conformance suite described in
 `AL_USE_MULTIVERSION_SHIM=ON`; with shim mode off the registered test list is
 exactly what it was before this suite existed.
 
-## Scope so far (issues #10, #11, #12, #13, #14, #15, #18, #21)
+## Scope so far (issues #10, #11, #12, #13, #14, #15, #18, #19, #20, #21)
 
 Issue #10 registered the suite's scaffold and its first test.
 Issue #11 added the shared comparison oracle every fixture-driven family
@@ -136,6 +136,24 @@ read scenario each need:
   reason or refusal-band code, while still reusing the shared full
   path/reason/band matcher; each rule-level failure names its id, kind, and
   citation, and the two assertions per rule are counted from the table size.
+- `cpp-test-shim-nested-loss` (F5.1, `contract-assertion`, HDF5 builds,
+  issue #20): the program reads the full older-DD pulse and checks only
+  `PARTIAL_READ` and a nonempty skipped-path record. Its CMake wrapper requires
+  a clean program exit and an unchanged fixture, then inspects exactly one
+  file in a private directory cleaned before each run. It pins the format-1
+  marker and line-five header, checks seven columns on every row, and compares
+  the set of operation/fidelity/path triples for equality (duplicates allowed).
+  The 14 `LOSSY` and three `UNMAPPABLE` rows are explained in
+  `check_nested_loss_log.cmake`: the latter reflect array-of-structures open
+  refusals, including the retyped coordinates container. This pins a refusal
+  decision; a change to return empty containers may turn it red on an
+  improvement. Suspect that decision before a mapping regression, and check
+  DD shape before interpreting sibling fidelities. Historical unit-redefinition
+  refusals are removed into a separate known-defect set and each is reported
+  as `LOSS-LOG-REDEFINITION-FAILURE`, consistent with issue #19's served-value
+  assertions. `cpp-test-shim-loss-log-harness` (`harness`) tests the wrapper
+  from a literal report, including malformed files, exact-set differences,
+  known defects, fixture mutation, and nonzero program exits.
 - `cpp-test-shim-roundtrip-cross-dd` and `cpp-test-shim-roundtrip-same-dd`
   (F6.1--F6.2, `contract-assertion`): two registrations of one program that
   appends a curated `psi_axis` value at a COCOS sign-flip path, then reads the

@@ -121,6 +121,20 @@ Three test groups:
   matcher. Rule-level failures include the table's id, kind, and citation, and
   the two checks per rule are counted from that table.
 
+  `cpp-test-shim-nested-loss` (issue #20/F5.1; HDF5 builds) checks a full
+  cross-DD read reports `PARTIAL_READ` and at least one skipped path. Its
+  CMake harness requires a clean program exit and an unchanged fixture, then
+  checks exactly one private, pre-cleaned loss file: exact format marker,
+  line-five header, seven columns per row, and equality of the distinct
+  operation/fidelity/path triples. The 14 LOSSY and three UNMAPPABLE rows
+  have per-path shape/refusal explanations; the test pins a refusal decision,
+  so serving an empty container instead may require revisiting it. Historical
+  unit-redefinition rows are kept outside the expected set, removed from the
+  actual set and reported as named failures, consistent with issue #19.
+  `cpp-test-shim-loss-log-harness` verifies parsing, exact-set comparison,
+  known-defect diagnostics, fixture integrity and failed-program rejection
+  using synthetic files.
+
 Things that bite:
 - Tests pass/fail on **output pattern matching**, not exit code: `FAIL_REGULAR_EXPRESSION`
   in `common/cmake/ALExampleUtilities.cmake` fails any test printing `error`, `fault`,
