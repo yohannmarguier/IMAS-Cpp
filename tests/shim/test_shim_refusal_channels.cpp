@@ -19,6 +19,7 @@
 #include "shim_rule_table.h"
 #include "shim_run_guard.h"
 
+#include <array>
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -27,8 +28,38 @@
 namespace {
 
 constexpr const char* kFailureMarker = "REFUSAL-CHANNELS-FAILURE";
-constexpr int kExpectedAssertions = 11;
+constexpr int kExpectedAssertions = 15;
 using Equilibrium = IdsNs::IDS::equilibrium;
+
+using RedefinedValue = double (*)(const Equilibrium& equilibrium);
+
+struct RedefinedCheck {
+  const char* id;
+  RedefinedValue value;
+};
+
+double xPointChiSquaredR(const Equilibrium& equilibrium) {
+  return equilibrium.time_slice(0).constraints.x_point(0).chi_squared_r;
+}
+
+double xPointChiSquaredZ(const Equilibrium& equilibrium) {
+  return equilibrium.time_slice(0).constraints.x_point(0).chi_squared_z;
+}
+
+double strikePointChiSquaredR(const Equilibrium& equilibrium) {
+  return equilibrium.time_slice(0).constraints.strike_point(0).chi_squared_r;
+}
+
+double strikePointChiSquaredZ(const Equilibrium& equilibrium) {
+  return equilibrium.time_slice(0).constraints.strike_point(0).chi_squared_z;
+}
+
+constexpr std::array<RedefinedCheck, 4> kRedefinedChecks{{
+    {"redefine-x-point-chi-sq-r", xPointChiSquaredR},
+    {"redefine-x-point-chi-sq-z", xPointChiSquaredZ},
+    {"redefine-strike-pt-chi-sq-r", strikePointChiSquaredR},
+    {"redefine-strike-pt-chi-sq-z", strikePointChiSquaredZ},
+}};
 
 const ShimRuleTable::Rule* findRule(const char* id) {
   for (const ShimRuleTable::Rule& rule : ShimRuleTable::refusalRules()) {
@@ -46,11 +77,57 @@ bool hasSpaceContainer(const Equilibrium& equilibrium) {
          equilibrium.grids_ggd(0).grid(0).space.extent(0) > 0;
 }
 
+bool hasRedefinedContainers(const Equilibrium& equilibrium) {
+  return equilibrium.time_slice.extent(0) > 0 && equilibrium.time_slice(0).constraints.x_point.extent(0) > 0 &&
+         equilibrium.time_slice(0).constraints.strike_point.extent(0) > 0;
+}
+
+std::vector<ShimRuleTable::Rule> redefinedRules() {
+  std::vector<ShimRuleTable::Rule> rules;
+  for (const ShimRuleTable::Rule& rule : ShimRuleTable::refusalRules()) {
+    if (rule.kind == ShimRuleTable::Kind::Redefined) rules.push_back(rule);
+  }
+  return rules;
+}
+
+const ShimRuleTable::Rule* findRule(const std::vector<ShimRuleTable::Rule>& rules, const char* id) {
+  for (const ShimRuleTable::Rule& rule : rules) {
+    if (std::strcmp(rule.id, id) == 0) return &rule;
+  }
+  return nullptr;
+}
+
+const RedefinedCheck* findRedefinedCheck(const char* id) {
+  for (const RedefinedCheck& check : kRedefinedChecks) {
+    if (std::strcmp(check.id, id) == 0) return &check;
+  }
+  return nullptr;
+}
+
+ShimTest::Verdict scalarVerdict(double oracle, double converted) {
+  const std::vector<double> oracleReading = oracle == EMPTY_DOUBLE ? std::vector<double>{}
+                                                                    : std::vector<double>{oracle};
+  const std::vector<double> convertedReading =
+      converted == EMPTY_DOUBLE ? std::vector<double>{} : std::vector<double>{converted};
+  return ShimTest::Compare(/*oracle=*/ ShimTest::OracleReading(oracleReading),
+                           /*converted=*/ ShimTest::ConvertedReading(convertedReading));
+}
+
 void expect(bool condition, const char* detail, int& assertions, int& failures) {
   ++assertions;
   if (!condition) {
     ++failures;
     std::printf("%s: %s\n", kFailureMarker, detail);
+  }
+}
+
+void expectRule(bool condition, const ShimRuleTable::Rule& rule, const char* detail, int& assertions,
+                int& failures) {
+  ++assertions;
+  if (!condition) {
+    ++failures;
+    std::printf("%s: rule %s (%s) citation=%s: %s\n", kFailureMarker, rule.id,
+                ShimRuleTable::kindName(rule.kind), rule.citation, detail);
   }
 }
 
@@ -134,6 +211,53 @@ int main(int argc, char* argv[]) {
   expect(laterFieldVerdict == ShimTest::Verdict::Same,
          "a served field from later in the traversal no longer agrees with the oracle", assertions,
          failures);
+
+  // A unit redefinition changes a label, not the number in either fixture.
+  // The value comparison alone would therefore also pass if the shim silently
+  // forwarded an older value with the wrong unit. Reject every skipped-path
+  // record for the full DD path, including one with a malformed reason or
+  // status; also use the shared path/reason/band matcher, so this check has
+  // the same three-part definition as the correctly refused retyped rule.
+  const std::vector<ShimRuleTable::Rule> rules = redefinedRules();
+  int redefinedAssertions = 0;
+  const bool redefinedContainersUsable =
+      oracleUsable && convertedUsable && hasRedefinedContainers(oracle) && hasRedefinedContainers(converted);
+  for (const ShimRuleTable::Rule& rule : rules) {
+    expectRule(redefinedContainersUsable, rule,
+               "a read did not reach the x_point and strike_point containers this rule indexes into", assertions,
+               failures);
+  }
+  if (redefinedContainersUsable) {
+    for (const ShimRuleTable::Rule& rule : rules) {
+      const RedefinedCheck* check = findRedefinedCheck(rule.id);
+      if (check == nullptr) {
+        std::printf("%s: rule %s (%s) citation=%s: has no value reader\n", kFailureMarker, rule.id,
+                    ShimRuleTable::kindName(rule.kind), rule.citation);
+        ++failures;
+        continue;
+      }
+      const ShimTest::Verdict verdict = scalarVerdict(check->value(oracle), check->value(converted));
+      expectRule(verdict == ShimRuleTable::expectedVerdict(rule.kind), rule,
+                 "the unit-redefined value did not agree with the oracle", redefinedAssertions, failures);
+      const IdsNs::SkippedPath* pathRecord = ShimTest::findRefusalByPath(
+          convertedSkippedPaths, IdsNs::SkippedPath::Operation::Read, rule.hliPath);
+      const IdsNs::SkippedPath* matchingRefusal = ShimTest::findRefusalByPathReasonAndBand(
+          convertedSkippedPaths, IdsNs::SkippedPath::Operation::Read, rule.hliPath,
+          ShimRuleTable::kRedefinedRefusalReason);
+      expectRule(pathRecord == nullptr && matchingRefusal == nullptr,
+                 rule, "a skipped-path record names this unit-redefined path", redefinedAssertions, failures);
+    }
+  }
+  const int expectedRedefinedAssertions = static_cast<int>(rules.size() * 2);
+  if (redefinedAssertions != expectedRedefinedAssertions) {
+    for (const ShimRuleTable::Rule& rule : rules) {
+      std::printf("%s: rule %s (%s) citation=%s: unit-redefinition assertion count was %d, expected %d\n",
+                  kFailureMarker, rule.id, ShimRuleTable::kindName(rule.kind), rule.citation, redefinedAssertions,
+                  expectedRedefinedAssertions);
+    }
+  }
+  ShimTest::assertRanCount(kFailureMarker, "unit-redefinition assertions", redefinedAssertions,
+                           expectedRedefinedAssertions, failures);
 
   convertedIds.close();
   oracleIds.close();

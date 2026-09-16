@@ -126,8 +126,8 @@ Three test groups:
   redefinitions now fall through as identical; `shim_rule_check.h`
   derives every expectation from the sole kind-to-verdict mapping and counts
   checked entries against the table size.
-  `cpp-test-shim-refusal-channels` (issue #18; HDF5 builds) asserts the map's
-  one `retyped` rule -- `grids_ggd/grid/space/coordinates_type` -- is reported
+  `cpp-test-shim-refusal-channels` (issues #18 and #19; HDF5 builds) asserts the map's
+  `retyped` rule -- `grids_ggd/grid/space/coordinates_type` -- is reported
   on all three refusal channels, not merely tolerated: the value is left
   absent, the path is named in the skipped-path record, and the read reports
   `PARTIAL_READ`. It also asserts the refusal was absorbed at the field rather
@@ -143,8 +143,12 @@ Three test groups:
   the operation, the full DD path (on the tail of the message's `DD path: `
   field, which survives truncation and tolerates a future generator
   prefixing it), the reason substring, and the refusal-status band. F4.4 as
-  documented also covers the four unit-`redefined` globs, served with no
-  refusal record; that half is not implemented here (issue #19).
+  documented also covers the four unit-`redefined` globs. Each is served with
+  its oracle value and has no read skipped-path record; the assertion rejects
+  any record for its full DD path, which is stronger than accepting only one
+  reason/band combination, while still reusing the full path/reason/band
+  matcher. Rule-level failures include the table's id, kind, and citation, and
+  the two checks per rule are counted from that table.
 
 Things that bite:
 - Tests pass/fail on **output pattern matching**, not exit code: `FAIL_REGULAR_EXPRESSION`

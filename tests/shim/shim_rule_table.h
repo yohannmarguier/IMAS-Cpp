@@ -205,8 +205,8 @@ inline constexpr std::array<Rule, 5> kRefusalRules{{
 
 inline constexpr const char* kRetypedRefusalReason =
     "this path's container changed shape and cannot be served";
-inline constexpr const char* kRedefinedAuditReason =
-    "the current map leaves this unit-redefined path unchanged";
+inline constexpr const char* kRedefinedRefusalReason =
+    "this path's unit was redefined and cannot be converted";
 
 inline constexpr const std::array<Rule, 23>& structuralRules() { return kStructuralRules; }
 inline constexpr const std::array<Rule, 30>& cocosRules() { return kCocosRules; }

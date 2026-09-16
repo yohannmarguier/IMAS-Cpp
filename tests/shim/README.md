@@ -110,7 +110,7 @@ read scenario each need:
   The map wins over the stale quoted count of 32. Each rule derives its expected verdict from the shared
   kind mapping, and a multi-leaf rule reports its first non-agreeing verdict.
 - `cpp-test-shim-refusal-channels` (F4.4, `contract-assertion`, HDF5 builds): the same two
-  reads as F4.1, asserting that the map's one `retyped` rule --
+  reads as F4.1, asserting that the map's `retyped` rule --
   `grids_ggd/grid/space/coordinates_type` (an int array in DD 3.39.0, an array
   of identifier structures in DD 4.1.1, no transformation reshapes one into
   the other) -- is reported on all three refusal channels rather than merely
@@ -130,9 +130,12 @@ read scenario each need:
   the operation, the full DD path (on the tail of the message's `DD path: `
   field, so it tolerates truncation and a future generator prefixing that
   field with more context), the reason substring, and the refusal-status
-  band. F4.4 as documented (`docs/SHIM_SUITE_CONVENTION.md` S5.4) also covers
-  the four unit-`redefined` globs -- asserted served, with no refusal record
-  -- which this ticket does not implement; that half is issue #19.
+  band. It also checks all four unit-`redefined` globs: each value agrees with
+  the oracle and has no read skipped-path record. The test rejects any record
+  for the full DD path, which is stricter than recognizing only a particular
+  reason or refusal-band code, while still reusing the shared full
+  path/reason/band matcher; each rule-level failure names its id, kind, and
+  citation, and the two assertions per rule are counted from the table size.
 - `cpp-test-shim-roundtrip-cross-dd` and `cpp-test-shim-roundtrip-same-dd`
   (F6.1--F6.2, `contract-assertion`): two registrations of one program that
   appends a curated `psi_axis` value at a COCOS sign-flip path, then reads the

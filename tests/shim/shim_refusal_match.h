@@ -67,4 +67,20 @@ inline const IdsNs::SkippedPath* findRefusalByPath(const std::vector<IdsNs::Skip
   return nullptr;
 }
 
+// The complete record predicate for a rule that expects a particular refusal.
+// Callers which expect no record can combine this with findRefusalByPath():
+// the former proves a refusal has all three required properties, and the
+// latter still rejects a record that is malformed or names the wrong reason.
+inline const IdsNs::SkippedPath* findRefusalByPathReasonAndBand(
+    const std::vector<IdsNs::SkippedPath>& records, IdsNs::SkippedPath::Operation operation,
+    const std::string& fullDictionaryPath, const std::string& reasonSubstring) {
+  for (const auto& record : records) {
+    if (record.operation == operation && refusalNamesPath(record, fullDictionaryPath) &&
+        refusalNamesReason(record, reasonSubstring) && refusalInBand(record)) {
+      return &record;
+    }
+  }
+  return nullptr;
+}
+
 }  // namespace ShimTest
