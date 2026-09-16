@@ -449,4 +449,30 @@ else()
   endfunction()
 
   al_cpp_shim_add_roundtrip_pair()
+
+  # F6.3 `torn-write` (docs/SHIM_SUITE_CONVENTION.md S5.6, issue #22): a
+  # `behaviour-pin`, not a `contract-assertion` -- it preserves an accepted
+  # limitation (no rollback on a refused write) rather than asserting a
+  # requirement of the shim.
+  add_executable( cpp-test-shim-torn-write test_shim_torn_write.cpp )
+  target_include_directories( cpp-test-shim-torn-write PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} )
+  target_link_libraries( cpp-test-shim-torn-write PRIVATE al-cpp )
+
+  al_cpp_shim_private_fixture_copy( cpp-test-shim-torn-write
+    "${AL_SHIM_FIXTURE_ROOT}/dd-3.39.0" _torn_write_fixture )
+  al_cpp_shim_private_loss_log( cpp-test-shim-torn-write _torn_write_loss_log_dir )
+
+  add_test( NAME cpp-test-shim-torn-write
+    COMMAND ${CMAKE_COMMAND}
+      -D "COMMAND_TO_RUN=$<TARGET_FILE:cpp-test-shim-torn-write>;${_torn_write_fixture}"
+      -D "EXPECTED_STDOUT_SUBSTRING=REFUSED WRITE: global_quantities/rho_tor_boundary"
+      -D "LOSS_LOG_DIR=${_torn_write_loss_log_dir}"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_torn_write.cmake"
+  )
+  set_tests_properties( cpp-test-shim-torn-write PROPERTIES
+    FIXTURES_REQUIRED "cpp-test-shim-torn-write-fixture;cpp-test-shim-torn-write-loss-log"
+    LABELS "shim;behaviour-pin"
+    ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT};IMAS_MVDD_LOSS_LOG_DIR=${_torn_write_loss_log_dir}"
+    FAIL_REGULAR_EXPRESSION "TORN-WRITE-FAILURE|SCENARIO-FAILURE"
+  )
 endif()

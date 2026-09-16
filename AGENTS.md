@@ -98,7 +98,16 @@ Three test groups:
   curated COCOS-mapped `psi_axis` round trip. The test is a consistency check,
   not evidence of the native on-disk stored path or sign. Its paired CTest
   fixture owns exactly the two program runs before either named case can
-  report a result.
+  report a result. `cpp-test-shim-torn-write` (issue #22) is this suite's one
+  `behaviour-pin`: it appends a slice carrying both `psi_axis` and a field the
+  shim's conversion map records as newer-DD-only (`global_quantities/
+  rho_tor_boundary`, `right_only` in `IMAS-Multiversion-DD-Loader`'s
+  `docs/3.39.0--4.1.1.xml`), asserts the resulting `PARTIAL_PUT` names that
+  exact refused path on standard output as well as through
+  `getSkippedPaths()`, and asserts the torn shape on read-back: the container
+  one element longer, the mapped field readable, the refused field still
+  empty. It pins an accepted limitation (no rollback on a refused write)
+  rather than a requirement of the shim.
 
 Things that bite:
 - Tests pass/fail on **output pattern matching**, not exit code: `FAIL_REGULAR_EXPRESSION`

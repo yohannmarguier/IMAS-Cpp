@@ -117,6 +117,31 @@ round trip did not merely avoid conversion. It does not establish the broader
 read-rule catalogue or native on-disk assertions; those remain separate
 families under `docs/SHIM_SUITE_CONVENTION.md` S5.
 
+- `cpp-test-shim-torn-write` (F6.3, **`behaviour-pin`**): against a fresh
+  private copy of the older-DD pulse, appends one slice carrying both the
+  mapped, COCOS-flipped `global_quantities/psi_axis` and
+  `global_quantities/rho_tor_boundary` -- a field the shim's own conversion
+  map (`IMAS-Multiversion-DD-Loader`'s `docs/3.39.0--4.1.1.xml`, rule
+  `new-global-quantities-rho-tor-boundary`) records as `right_only`: "path
+  added in DD 3.40.0; no counterpart in 3.39.0", forward direction
+  `unmappable`. Asserts the `putSlice` reports `PARTIAL_PUT`; that
+  `getSkippedPaths()` names the specific refused `Write` of
+  `global_quantities/rho_tor_boundary` (a slice put writes every field of the
+  whole appended element, so other unmapped fields under it may also be
+  refused -- this pin cares about one field by name, not about being the
+  only refusal); and, on the read-back, that the time-slice and time-base
+  containers each grew by exactly one, the mapped `psi_axis` value the
+  refusal ran alongside is readable, and the refused field itself stayed
+  empty. `verify_torn_write.cmake` also asserts the traversal's own
+  `REFUSED WRITE: global_quantities/rho_tor_boundary` diagnostic
+  (`IdsNs::Ids::mustAbort`, `src/IdsDef.cpp`) reached the program's standard
+  output and not its standard error. This is a pin on an accepted
+  limitation, not a statement that a torn write is desirable: the generated
+  write traversal has no rollback, so a refusal partway through leaves
+  everything already written on disk, and the container one element longer
+  regardless, because the array-of-structures open widens it before any leaf
+  write runs.
+
 IMAS-Core is pinned to a fork commit carrying the path-aware HDF5 delete fix
 (IMAS-Core #63/#64) whenever `AL_USE_MULTIVERSION_SHIM=ON` -- see the comment
 at the top of the repository's `CMakeLists.txt`. Without it, `F6.4
@@ -134,8 +159,11 @@ ctest --test-dir <shim-build> -L harness --output-on-failure
 
 The five F2/F3 `contract-assertion` tests follow
 `docs/SHIM_SUITE_CONVENTION.md` S1 D5 and stay red while the shim disagrees,
-never inverted, quarantined, or softened to match observed behaviour. No
-`behaviour-pin` test exists here yet.
+never inverted, quarantined, or softened to match observed behaviour.
+`cpp-test-shim-torn-write` (F6.3) is this suite's one `behaviour-pin`: it
+preserves an accepted limitation (no rollback on a refused write) rather than
+asserting a requirement of the shim, so nothing here should ever change to
+give it atomic rollback.
 
 ## Contract assertions known to be red
 
