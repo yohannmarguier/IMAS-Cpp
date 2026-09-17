@@ -305,28 +305,38 @@ else()
   # IDS::open therefore forwards, while equilibrium.get reaches the occurrence
   # open and returns the shim's refusal before any data seam is served.
   add_dependencies( cpp-test-shim-stamp-malformed cpp-shim-stamp-fixtures )
-  al_cpp_shim_private_loss_log( cpp-test-shim-stamp-malformed
-    AL_SHIM_STAMP_MALFORMED_LOSS_LOG_DIR )
 
-  # The program verifies every returned public status and the untouched IDS.
-  # Its generated get() prints the frozen reason rather than returning it, so
-  # the read-fixture wrapper checks program success first, then captures the
-  # message from standard output. This is F3.1's named diagnostic exception;
-  # a PASS_REGULAR_EXPRESSION would be unsound because it can accept matching
-  # output from a program that exited unsuccessfully.
-  add_test( NAME cpp-test-shim-stamp-malformed
-    COMMAND ${CMAKE_COMMAND}
-      -D "FIXTURE_ROOT=${AL_SHIM_STAMP_MALFORMED_FIXTURE}"
-      -D "COMMAND_TO_RUN=$<TARGET_FILE:cpp-test-shim-stamp-malformed>;${AL_SHIM_STAMP_MALFORMED_FIXTURE}"
-      -D "EXPECTED_STDOUT_SUBSTRING=malformed DD-version stamp"
-      -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_fixture_unchanged.cmake"
-  )
-  set_tests_properties( cpp-test-shim-stamp-malformed PROPERTIES
-    ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT};IMAS_MVDD_LOSS_LOG_DIR=${AL_SHIM_STAMP_MALFORMED_LOSS_LOG_DIR}"
-    FIXTURES_REQUIRED cpp-test-shim-stamp-malformed-loss-log
-    LABELS "shim;contract-assertion"
-    FAIL_REGULAR_EXPRESSION "REFUSAL-FAILURE;SCENARIO-FAILURE"
-  )
+  # Gated on the HDF5 backend like every other fixture-reading scenario: the
+  # program opens imas:hdf5?path=..., so without that backend it would
+  # register and fail rather than skip, and a missing prerequisite must print
+  # what is missing and skip registration.
+  if( NOT AL_BACKEND_HDF5 )
+    message( STATUS
+      "Not registering shim occurrence-open refusal scenario: HDF5 backend is disabled" )
+  else()
+    al_cpp_shim_private_loss_log( cpp-test-shim-stamp-malformed
+      AL_SHIM_STAMP_MALFORMED_LOSS_LOG_DIR )
+
+    # The program verifies every returned public status and the untouched IDS.
+    # Its generated get() prints the frozen reason rather than returning it, so
+    # the read-fixture wrapper checks program success first, then captures the
+    # message from standard output. This is F3.1's named diagnostic exception;
+    # a PASS_REGULAR_EXPRESSION would be unsound because it can accept matching
+    # output from a program that exited unsuccessfully.
+    add_test( NAME cpp-test-shim-stamp-malformed
+      COMMAND ${CMAKE_COMMAND}
+        -D "FIXTURE_ROOT=${AL_SHIM_STAMP_MALFORMED_FIXTURE}"
+        -D "COMMAND_TO_RUN=$<TARGET_FILE:cpp-test-shim-stamp-malformed>;${AL_SHIM_STAMP_MALFORMED_FIXTURE}"
+        -D "EXPECTED_STDOUT_SUBSTRING=malformed DD-version stamp"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_fixture_unchanged.cmake"
+    )
+    set_tests_properties( cpp-test-shim-stamp-malformed PROPERTIES
+      ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT};IMAS_MVDD_LOSS_LOG_DIR=${AL_SHIM_STAMP_MALFORMED_LOSS_LOG_DIR}"
+      FIXTURES_REQUIRED cpp-test-shim-stamp-malformed-loss-log
+      LABELS "shim;contract-assertion"
+      FAIL_REGULAR_EXPRESSION "REFUSAL-FAILURE;SCENARIO-FAILURE"
+    )
+  endif()
 
   # Family 2 (docs/SHIM_SUITE_CONVENTION.md S5.2, issue #13): all four
   # passthrough states read an HDF5 equilibrium fixture. They share one
