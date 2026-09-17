@@ -323,6 +323,15 @@ else()
     # message from standard output. This is F3.1's named diagnostic exception;
     # a PASS_REGULAR_EXPRESSION would be unsound because it can accept matching
     # output from a program that exited unsuccessfully.
+    #
+    # EXPECTED_STDOUT_SUBSTRING is the head of the frozen reason
+    # `malformed DD-version stamp at
+    # 'ids_properties/version_put/data_dictionary'`, cited from
+    # docs/SHIM_INTEGRATION_CONTRACT.md S8.5 ("Version-latch and stamp
+    # reasons"), whose own entry attributes it to the occurrence-open refusal
+    # of S3's last row. Matched as a substring because S8.1 forbids asserting
+    # a whole message: it is truncated to MAX_ERR_MSG_LEN, the path cut from
+    # the left.
     add_test( NAME cpp-test-shim-stamp-malformed
       COMMAND ${CMAKE_COMMAND}
         -D "FIXTURE_ROOT=${AL_SHIM_STAMP_MALFORMED_FIXTURE}"

@@ -203,8 +203,21 @@ inline constexpr std::array<Rule, 5> kRefusalRules{{
      "fixture/contract unit change m -> m^-2; map audit: redefine glob removed, falls through identical"},
 }};
 
+// Frozen reason strings, transcribed from
+// docs/SHIM_INTEGRATION_CONTRACT.md S8.2 ("Path-resolution reasons"). They
+// carry their citation for the same reason every Rule above does: the only
+// text this suite matches against the shim's own message must be traceable to
+// the agreement rather than to somebody's typing.
+//
+// Matched as substrings, never whole messages: S8.1 truncates a message to
+// MAX_ERR_MSG_LEN in a fixed order, so a deep DD path can legitimately push
+// the version pair out of it.
+
+// S8.2: raised "on the `retyped` rule -- unconditional, even where the rule
+// declares itself `exact`".
 inline constexpr const char* kRetypedRefusalReason =
     "this path's container changed shape and cannot be served";
+// S8.2: raised "on a unit-redefinition rule".
 inline constexpr const char* kRedefinedRefusalReason =
     "this path's unit was redefined and cannot be converted";
 
