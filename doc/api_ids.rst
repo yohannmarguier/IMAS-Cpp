@@ -17,7 +17,8 @@ IDS (``IdsNs::Ids``) API
     .. note::
         **Changed public return contract.** The database operations of this
         class (:cpp:func:`get`, :cpp:func:`getSlice`, :cpp:func:`getSample`,
-        :cpp:func:`put`, :cpp:func:`putSlice`, :cpp:func:`partialGet`) now
+        :cpp:func:`put`, :cpp:func:`putSlice`, :cpp:func:`deleteAll`,
+        :cpp:func:`partialGet`) now
         return a three-way status code: ``0`` success; ``>0`` completed
         with refused paths; ``<0`` failure. A positive status is returned
         when the operation completes after at least one tolerated refusal
@@ -239,6 +240,30 @@ IDS (``IdsNs::Ids``) API
             may be a refused write or a refused delete; the skipped
             paths are recorded, see :cpp:func:`getSkippedPaths`.
         :example: .. literalinclude:: code_samples/dbentry_put_slice
+
+    .. cpp:function:: int deleteAll(int occurrence)
+
+        Delete the entire contents of an IDS occurrence from the Database
+        Entry.
+
+        .. caution::
+            Refused deletes are best effort. When the operation returns
+            :cpp:expr:`PARTIAL_PUT`, the refused fields were not deleted,
+            and no rollback of the data already deleted is performed.
+
+        :param occurrence: Which occurrence of the IDS to delete.
+        :returns: Status code: ``0`` success; ``>0``
+            (:cpp:expr:`PARTIAL_PUT`) completed with refused paths;
+            ``<0`` failure. The positive status is returned when the
+            delete completes after at least one tolerated refusal; the
+            skipped paths are recorded, see :cpp:func:`getSkippedPaths`.
+
+    .. cpp:function:: int deleteAll()
+
+        Delete the entire contents of occurrence ``0`` of this IDS from the
+        Database Entry. Equivalent to :cpp:expr:`deleteAll(0)`.
+
+        :returns: As for :cpp:func:`deleteAll(int occurrence)`.
 
     .. cpp:function:: int partialGet(int occurrence, const std::string &includes, const std::string &excludes, bool debug=false)
 
