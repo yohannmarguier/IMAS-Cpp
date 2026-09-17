@@ -89,7 +89,25 @@ Three test groups:
   IMAS-Fortran, not generated here — see that directory's README), whose
   provenance and derived stamp-state variants are themselves registered
   tests, gated on a Python venv with `imas-python`/`h5py` and `h5diff` being
-  present.
+  present. `cpp-test-shim-stamp-malformed` and the four
+  `cpp-test-shim-{version-unset,stamp-equal,stamp-absent,
+  stamp-mismatch-no-artifact}` tests are contract assertions. The malformed
+  scenario proves a malformed occurrence stamp passes the data-entry open but
+  refuses at `equilibrium.get`, without a skipped path or populated IDS. Its
+  frozen reason is captured from generated `get` standard output only after
+  the executable has verified a refusal-band status and exited cleanly; this
+  is the suite's named external-behaviour exception. It also gets a private
+  cleaned loss-log directory, even though it does not inspect that log. The
+  four passthrough scenarios each read a private HDF5 fixture in their own
+  process, require clean success and no skipped paths, leave the fixture
+  unchanged, and prove their loss-log directories stayed empty. The
+  unset-version registration composes an environment that omits
+  `IMAS_MVDD_HLI_DD_VERSION`; it never clears a value injected by the build.
+  The older and no-artifact mismatch scenarios also require the newer-only
+  `beta_tor_norm` field to remain unset. `tests/shim/README.md` publishes the
+  contract-assertion red list; update it with a reviewed cause and owner
+  whenever a contract assertion is red, and identify the test host and loaded
+  IMAS-Core whenever recording an observed empty list.
   `cpp-test-shim-roundtrip-cross-dd` and `cpp-test-shim-roundtrip-same-dd`
   are paired registrations of one slice-append program (issue #21): each has
   a fresh private fixture and loss-log directory; the DD 3.39.0 run explicitly
