@@ -182,14 +182,15 @@ function( al_cpp_shim_private_loss_log test_name out_var )
       -D "LOSS_LOG_DIR=${_dir}"
       -P "${CMAKE_CURRENT_SOURCE_DIR}/clean_loss_log_dir.cmake"
   )
-  # No second label (contract-assertion/behaviour-pin/harness): this is
-  # FIXTURES_SETUP plumbing that runs ahead of the test it serves, not
-  # itself a statement about the shim, so `-L <second-label>` selecting only
-  # statements about the agreement should not need to see it. IMAS-Fortran's
-  # reference suite draws the same line.
+  # `harness`: this is FIXTURES_SETUP plumbing that runs ahead of the test it
+  # serves, not itself a statement about the shim. The convention (S5, S6) is
+  # unconditional -- every registered test carries `shim` plus exactly one of
+  # contract-assertion/behaviour-pin/harness -- and `harness` is the kind that
+  # means "not a statement about the agreement", so `-L contract-assertion`
+  # still selects only those statements.
   set_tests_properties( ${test_name}-loss-log-clean PROPERTIES
     FIXTURES_SETUP ${test_name}-loss-log
-    LABELS "shim"
+    LABELS "shim;harness"
   )
   set( ${out_var} "${_dir}" PARENT_SCOPE )
 endfunction()
@@ -209,11 +210,11 @@ function( al_cpp_shim_private_fixture_copy test_name source out_var )
       -D "DESTINATION=${_dir}"
       -P "${CMAKE_CURRENT_SOURCE_DIR}/copy_fixture.cmake"
   )
-  # No second label, for the same reason as the loss-log setup test above:
-  # this is FIXTURES_SETUP plumbing, not itself a statement about the shim.
+  # `harness`, for the same reason as the loss-log setup test above: this is
+  # FIXTURES_SETUP plumbing, not itself a statement about the shim.
   set_tests_properties( ${test_name}-fixture-copy PROPERTIES
     FIXTURES_SETUP ${test_name}-fixture
-    LABELS "shim"
+    LABELS "shim;harness"
   )
   set( ${out_var} "${_dir}" PARENT_SCOPE )
 endfunction()

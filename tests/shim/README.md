@@ -343,8 +343,10 @@ There are no `contract-assertion` tests currently red.
 
 This is what a full run of `ctest -L shim` printed on **2026-09-17** on
 `MacBook-Pro-de-Yohann.local` (Darwin 25.6.0, arm64): 42 shim-labelled tests
-(14 `contract-assertion`, 1 `behaviour-pin`, 9 `harness`, plus their
-fixture/loss-log-clean setup registrations), **all passed**. The build loaded:
+(14 `contract-assertion`, 1 `behaviour-pin`, 27 `harness` — 9 harness
+scenarios plus the 18 fixture-copy and loss-log-clean setup registrations,
+which carry `harness` because the convention admits no unlabelled test),
+**all passed**. The build loaded:
 
 - **Shim**: IMAS-Multiversion-DD-Loader `v0.2.0-58-g51e64b0`
   (`51e64b05a34e7fb1ebf495885eaae8085903d2b7`),
