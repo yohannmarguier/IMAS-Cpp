@@ -2,7 +2,7 @@
 // rules read exclusively through the public C++ HLI.  The DD 4.1.1 fixture
 // is the same-version oracle; DD 3.39.0 is read through the shim.
 #include "ALClasses.h"
-#include "shim_fixture_uri.h"
+#include "shim_paired_read.h"
 #include "shim_rule_check.h"
 #include "shim_rule_table.h"
 
@@ -308,20 +308,12 @@ int main(int argc, char* argv[]) {
 
   IdsNs::IDS convertedIds;
   IdsNs::IDS oracleIds;
-  const int convertedOpen = convertedIds.open(ShimTest::hdf5Uri(argv[1], "dd-3.39.0"), OPEN_PULSE);
-  const int convertedStatus = convertedOpen == 0 ? convertedIds._equilibrium.get() : convertedOpen;
-  const int oracleOpen = oracleIds.open(ShimTest::hdf5Uri(argv[1], "dd-4.1.1"), OPEN_PULSE);
-  const int oracleStatus = oracleOpen == 0 ? oracleIds._equilibrium.get() : oracleOpen;
-
-  const bool oracleUsable = oracleOpen == 0 && oracleStatus == 0;
-  const bool convertedUsable =
-      convertedOpen == 0 && (convertedStatus == 0 || convertedStatus == IdsNs::PARTIAL_READ);
-  checker.expect(oracleUsable, "the same-version oracle read did not succeed cleanly");
-  checker.expect(convertedUsable,
-                 "the cross-version read did not succeed or report a partial read");
-  checker.expect(oracleUsable && convertedUsable && hasRequiredContainers(oracleIds._equilibrium) &&
-                     hasRequiredContainers(convertedIds._equilibrium),
-                 "a read did not reach every container the structural rules index into");
+  const ShimTest::PairedRead read = ShimTest::openPairedRead(convertedIds, oracleIds, argv[1]);
+  ShimTest::expectPairedReadUsable(
+      checker, read,
+      hasRequiredContainers(oracleIds._equilibrium) &&
+          hasRequiredContainers(convertedIds._equilibrium),
+      "a read did not reach every container the structural rules index into");
 
   if (checker.failures() == 0) {
     // A structural evaluator is handed its Rule, so look it up through the
