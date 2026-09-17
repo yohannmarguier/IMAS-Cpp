@@ -41,3 +41,17 @@ the library is expected on the loader's search path.
 For an installed C++ library, also make the shim's ``lib`` directory available
 to the dynamic loader and its ``lib/pkgconfig`` directory available through
 ``PKG_CONFIG_PATH``.
+
+Refused writes and deletes
+--------------------------
+
+When the shim refuses an individual field while writing or deleting, ``put``,
+``putSlice`` and ``deleteAll`` keep traversing the remaining fields. They return
+``IdsNs::PARTIAL_PUT`` and expose each skipped path through
+``getSkippedPaths()``; records are tagged as ``Write`` or ``Delete`` and are
+cleared at the next root write or delete. The operation also prints one
+``REFUSED WRITE:`` or ``REFUSED DELETE:`` line per skipped path.
+
+This is intentionally best effort. In particular, a refusal partway through
+``putSlice`` does not roll back earlier writes or the array-of-structures
+resize; data already written remains on disk.

@@ -11,6 +11,10 @@ if( AL_USE_MULTIVERSION_SHIM )
   find_package( imas-mvdd-loader REQUIRED CONFIG )
   set( AL_CPP_CORE_TARGET imas-mvdd-loader::imas-mvdd-loader )
   set( AL_CPP_CORE_PC_REQUIRES "imas-mvdd-loader" )
+  # File name of the shim's library, without prefix or suffix -- what a
+  # dependency listing of the built al-cpp library spells. tests/shim's
+  # linkage test asserts on it.
+  set( AL_SHIM_LIBRARY_NAME imas_mvdd_loader )
   target_include_directories( al-cpp PUBLIC
     "$<BUILD_INTERFACE:$<TARGET_PROPERTY:al,INTERFACE_INCLUDE_DIRECTORIES>>"
   )
