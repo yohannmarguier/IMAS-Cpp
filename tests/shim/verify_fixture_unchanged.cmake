@@ -52,8 +52,20 @@ if( DEFINED LOSS_LOG_DIR )
   endif()
 endif()
 
+# Only the EXPECTED_STDOUT_SUBSTRING branch captures the program's streams; the
+# other lets them through to the console. Replay what was captured whenever
+# that branch reports a failure, or the diagnostic the program printed -- the
+# refusal reason itself, in F3.1's case -- is swallowed by the capture and the
+# ctest log shows a bare exit status.
+set( _al_cpp_shim_captured_output "" )
+if( DEFINED EXPECTED_STDOUT_SUBSTRING )
+  set( _al_cpp_shim_captured_output
+    "\n--- program stdout ---\n${_al_cpp_shim_program_stdout}\n--- program stderr ---\n${_al_cpp_shim_program_stderr}" )
+endif()
+
 if( NOT _al_cpp_shim_digest_result EQUAL 0 )
-  message( FATAL_ERROR "SCENARIO-FAILURE: command exited with status ${_al_cpp_shim_digest_result}: ${COMMAND_TO_RUN}" )
+  message( FATAL_ERROR
+    "SCENARIO-FAILURE: command exited with status ${_al_cpp_shim_digest_result}: ${COMMAND_TO_RUN}${_al_cpp_shim_captured_output}" )
 endif()
 
 if( DEFINED EXPECTED_STDOUT_SUBSTRING )
@@ -61,6 +73,6 @@ if( DEFINED EXPECTED_STDOUT_SUBSTRING )
     _al_cpp_shim_expected_stdout_at )
   if( _al_cpp_shim_expected_stdout_at EQUAL -1 )
     message( FATAL_ERROR
-      "SCENARIO-FAILURE: program standard output did not contain '${EXPECTED_STDOUT_SUBSTRING}'" )
+      "SCENARIO-FAILURE: program standard output did not contain '${EXPECTED_STDOUT_SUBSTRING}'${_al_cpp_shim_captured_output}" )
   endif()
 endif()
