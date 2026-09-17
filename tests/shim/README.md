@@ -356,6 +356,12 @@ convention admits no unlabelled test), **all passed**. The build loaded:
   `libal.5.7.2.86.dylib` — the fork commit carrying the path-aware HDF5 delete
   fix (IMAS-Core #63/#64) that F6.4 depends on (see below).
 
+The same suite was then observed on Linux (ubuntu-24.04, x86-64) by
+IMAS-Multiversion-DD-Loader run `35238451263` on **2026-09-17**, against the
+same IMAS-Core and shim `d07b34c`: 41 of the 42 registered there — F1.4
+fixture-provenance needs an `h5diff` that job does not install, see "CI" below
+— and all 41 passed. Nothing was red on either machine.
+
 Per `docs/SHIM_SUITE_CONVENTION.md` S1 D5, three rules govern this list, each
 learned the hard way by IMAS-Fortran:
 
@@ -446,10 +452,32 @@ the convention makes the same asks rather than working around them silently:
 
 ## CI
 
-This suite is not wired into CI, and that is a deliberate choice, not an
-oversight: a suite designed to be able to start red (D5 — `contract-assertion`
-tests stay red while the shim disagrees, never inverted or quarantined) cannot
-gate anything until its red list is empty and stays that way. Wiring it into
-CI is a decision to take explicitly, once its profile, direction, and coverage
-boundaries are published here alongside the loaded IMAS-Core — which this
-document now does.
+This suite now runs in CI — not from this repository, which registers no
+workflow, but from the shim's: IMAS-Multiversion-DD-Loader's
+`.github/workflows/hli-validation.yml` pins this fork by commit and builds it
+with `AL_USE_MULTIVERSION_SHIM=ON`.
+
+That is the decision this section used to say had to be taken explicitly, and
+the condition it set was met before it was taken: the red list above was
+already empty. What the decision buys is the thing no run on one developer's
+machine can give — a second machine, a second operating system, and a build
+nobody configured by hand.
+
+**CI registers 41 of the 42 below, not all of them.** The job provisions
+`imas-python-fixtures/.venv` with h5py alone, which is what the five
+stamp-state scenarios (F2.1–F2.4, F3.1) need to have their fixtures derived,
+and it does not install `h5diff` — so F1.4 fixture-provenance does not register
+there. That is deliberate: regenerating the pair needs imas-python, and the job
+would then be comparing the checked-in fixtures against whatever Data
+Dictionary `pip` resolved that morning, which can go red for a reason living in
+neither this HLI nor the shim. Fixture provenance stays a check you run here,
+against the venv described in `imas-python-fixtures/README.md`. The workflow
+asserts the number 41 rather than assuming it, so if either prerequisite
+appears in that image the count changes and the job says so by name.
+
+First observed on Linux on **2026-09-17**, IMAS-Multiversion-DD-Loader run
+`35238451263`: **65 registered tests, all passed**, 41 of them this suite's,
+against shim `d07b34c` and the same IMAS-Core `dae4abd` named in the red list
+above. Per D5 rule 1 that remains an observation of one machine, one shim and
+one core rather than a general statement — but it is now two machines and two
+operating systems making the same one.
