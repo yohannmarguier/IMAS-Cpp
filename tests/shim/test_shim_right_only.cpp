@@ -3,6 +3,7 @@
 // 4.1.1 fixture is the same-version oracle; DD 3.39.0 is read through the
 // shim and has nothing to build these paths from.
 #include "ALClasses.h"
+#include "shim_fixture_uri.h"
 #include "shim_rule_check.h"
 #include "shim_rule_table.h"
 
@@ -48,10 +49,6 @@ OracleValue<T> oracleValue(const T& value) {
 template <typename T>
 ConvertedValue<T> convertedValue(const T& value) {
   return {value};
-}
-
-std::string hdf5Uri(const char* fixtureRoot, const char* dictionaryDirectory) {
-  return std::string("imas:hdf5?path=") + fixtureRoot + "/" + dictionaryDirectory;
 }
 
 std::vector<double> scalarReading(double value) {
@@ -274,9 +271,9 @@ int main(int argc, char* argv[]) {
 
   IdsNs::IDS convertedIds;
   IdsNs::IDS oracleIds;
-  const int convertedOpen = convertedIds.open(hdf5Uri(argv[1], "dd-3.39.0"), OPEN_PULSE);
+  const int convertedOpen = convertedIds.open(ShimTest::hdf5Uri(argv[1], "dd-3.39.0"), OPEN_PULSE);
   const int convertedStatus = convertedOpen == 0 ? convertedIds._equilibrium.get() : convertedOpen;
-  const int oracleOpen = oracleIds.open(hdf5Uri(argv[1], "dd-4.1.1"), OPEN_PULSE);
+  const int oracleOpen = oracleIds.open(ShimTest::hdf5Uri(argv[1], "dd-4.1.1"), OPEN_PULSE);
   const int oracleStatus = oracleOpen == 0 ? oracleIds._equilibrium.get() : oracleOpen;
 
   const bool oracleUsable = oracleOpen == 0 && oracleStatus == 0;

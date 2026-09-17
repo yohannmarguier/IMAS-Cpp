@@ -34,6 +34,7 @@
 // red result here implicates the loaded IMAS-Core, not this repository or
 // the shim.
 #include "ALClasses.h"
+#include "shim_fixture_uri.h"
 #include "shim_run_guard.h"
 
 #include <cmath>
@@ -61,10 +62,6 @@ void expect(bool condition, const char* detail, int& assertions, int& failures) 
   }
 }
 
-std::string hdf5Uri(const char* fixtureDirectory) {
-  return std::string("imas:hdf5?path=") + fixtureDirectory;
-}
-
 }  // namespace
 
 int main(int argc, char* argv[]) {
@@ -75,7 +72,7 @@ int main(int argc, char* argv[]) {
 
   int assertions = 0;
   int failures = 0;
-  const std::string uri = hdf5Uri(argv[1]);
+  const std::string uri = ShimTest::hdf5Uri(argv[1]);
 
   IdsNs::IDS ids;
   expect(ids.open(uri, OPEN_PULSE) == 0, "could not open the private fixture", assertions,

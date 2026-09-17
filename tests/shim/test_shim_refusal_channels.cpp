@@ -15,6 +15,7 @@
 // ordering keeps this assertion correct if a future revision reads both
 // pulses through one shared object instead of two.
 #include "ALClasses.h"
+#include "shim_fixture_uri.h"
 #include "shim_refusal_match.h"
 #include "shim_rule_table.h"
 #include "shim_run_guard.h"
@@ -66,10 +67,6 @@ const ShimRuleTable::Rule* findRule(const char* id) {
     if (std::strcmp(rule.id, id) == 0) return &rule;
   }
   return nullptr;
-}
-
-std::string hdf5Uri(const char* fixtureRoot, const char* dictionaryDirectory) {
-  return std::string("imas:hdf5?path=") + fixtureRoot + "/" + dictionaryDirectory;
 }
 
 bool hasSpaceContainer(const Equilibrium& equilibrium) {
@@ -150,14 +147,14 @@ int main(int argc, char* argv[]) {
   int failures = 0;
 
   IdsNs::IDS convertedIds;
-  const int convertedOpen = convertedIds.open(hdf5Uri(argv[1], "dd-3.39.0"), OPEN_PULSE);
+  const int convertedOpen = convertedIds.open(ShimTest::hdf5Uri(argv[1], "dd-3.39.0"), OPEN_PULSE);
   const int convertedStatus = convertedOpen == 0 ? convertedIds._equilibrium.get() : convertedOpen;
   const std::vector<IdsNs::SkippedPath> convertedSkippedPaths =
       convertedIds._equilibrium.getSkippedPaths();
   const Equilibrium& converted = convertedIds._equilibrium;
 
   IdsNs::IDS oracleIds;
-  const int oracleOpen = oracleIds.open(hdf5Uri(argv[1], "dd-4.1.1"), OPEN_PULSE);
+  const int oracleOpen = oracleIds.open(ShimTest::hdf5Uri(argv[1], "dd-4.1.1"), OPEN_PULSE);
   const int oracleStatus = oracleOpen == 0 ? oracleIds._equilibrium.get() : oracleOpen;
   const Equilibrium& oracle = oracleIds._equilibrium;
 
