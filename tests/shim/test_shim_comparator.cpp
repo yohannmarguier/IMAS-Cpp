@@ -127,12 +127,23 @@ int main() {
     ++cases;
   }
 
-  // Different element counts: the shape/flatten behaviour of S4.4.
+  // Different element counts: the shape/flatten behaviour of S4.4. Both
+  // orientations, because a comparator deriving the shape verdict from one
+  // side's extent alone -- rather than from the two disagreeing -- would pass
+  // whichever single case happened to be written.
   {
     ExpectVerdict(
-        "shape-mismatch",
+        "shape-converted-longer",
         Verdict::Shape,
         Compare(/*oracle=*/OracleReading{{1.0, 2.0}}, /*converted=*/ConvertedReading{{1.0, 2.0, 3.0}}),
+        failures);
+    ++cases;
+  }
+  {
+    ExpectVerdict(
+        "shape-oracle-longer",
+        Verdict::Shape,
+        Compare(/*oracle=*/OracleReading{{1.0, 2.0, 3.0}}, /*converted=*/ConvertedReading{{1.0, 2.0}}),
         failures);
     ++cases;
   }
@@ -150,7 +161,7 @@ int main() {
     ++cases;
   }
 
-  ShimTest::assertRanCount("COMPARATOR-FAILURE", "truth-table cases run", cases, 11, failures);
+  ShimTest::assertRanCount("COMPARATOR-FAILURE", "truth-table cases run", cases, 12, failures);
 
   if (failures > 0) {
     std::printf("COMPARATOR-FAILURE: %d expectation(s) failed\n", failures);
