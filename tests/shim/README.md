@@ -5,7 +5,7 @@ This directory holds the Tier-1 shim conformance suite described in
 `AL_USE_MULTIVERSION_SHIM=ON`; with shim mode off the registered test list is
 exactly what it was before this suite existed.
 
-## Scope so far (issues #10, #11, #12, #13, #14)
+## Scope so far (issues #10, #11, #12, #13, #14, #15, #16, #17, #18, #19, #20, #21, #22, #23)
 
 Issue #10 registered the suite's scaffold and its first test.
 Issue #11 added the shared comparison oracle every fixture-driven family
@@ -98,6 +98,96 @@ read scenario each need:
   `beta_tor_norm` remains absent, and its source header records why its
   otherwise indistinguishable result must remain a separate scenario.
 
+- `cpp-test-shim-structural-rules` (F4.1, `contract-assertion`, HDF5 builds): reads the
+  DD 3.39.0 fixture through the shim and the DD 4.1.1 fixture same-version,
+  then checks all 23 structural rules at the public C++ HLI. Its hand-authored
+  table has 23 structural, 30 COCOS, 13 right-only, and 5 refusal entries;
+  every entry cites the conversion map or fixture provenance. The transcription
+  audit records the externally reachable map's unresolved includes (including
+  common renames), its actual 30 COCOS flips, and the two fixture-only
+  negations inside DD-4-only structures. It also records that four historical
+  chi-squared unit redefinitions now fall through as identical in the map.
+  The map wins over the stale quoted count of 32. Each rule derives its expected verdict from the shared
+  kind mapping, and a multi-leaf rule reports its first non-agreeing verdict.
+- `cpp-test-shim-cocos-rules` (F4.2, `contract-assertion`, HDF5 builds): reads
+  the same fixture pair through the public HLI and checks every one of the
+  table's 30 map-declared COCOS paths. Each expects the shared kind mapping's
+  `same` verdict. A stopped sign flip therefore reports the comparator's
+  `no-flip` verdict as a failed assertion, naming the rule id, kind and cited
+  map/fixture source. The program counts checked entries against the table's
+  own size, so it cannot report coverage for the two fixture-only negations.
+- `cpp-test-shim-right-only-rules` (F4.3, `contract-assertion`, HDF5 builds): reads the
+  same two fixtures as F4.1 and checks all 13 `right_only` rules in the shared
+  table. Expects `ONLY_ORACLE` per rule -- the shim correctly serves nothing,
+  and the oracle holds a real value proving the comparison is not vacuous.
+  Carries the D6 vacuity demonstration this family requires: one right-only
+  rule's converted reading, already established served-nothing by the
+  ordinary check above it, is put through the same `Compare()` predicate
+  against a real oracle value taken from an unrelated structural-table entry
+  (`identical-vacuum-r0`), and must disagree with that entry's own agreement
+  expectation. Without that demonstration, a shim serving nothing at all
+  would satisfy every right-only rule for the wrong reason. The one
+  right-only path this test indexes through an array-of-structures element
+  (`constraints/j_parallel`) guards the converted side's element access on
+  its own extent instead of assuming it was resized, since the path has no
+  DD 3 source to resize it from. Per docs/SHIM_SUITE_CONVENTION.md S2.1, a
+  converted reading that turns out neither absent nor `ONLY_ORACLE` is
+  printed as its own named finding, separate from the ordinary rule-mismatch
+  message: a field reading back as a plausible-looking value instead of the
+  invalid sentinel is a worse outcome than a wrong one and this suite's job
+  is to say so, not fold it into an unremarkable failure. IMAS-Fortran found
+  exactly this on its own HLI (five `right_only` paths reading back as
+  uninitialised memory, one as four ASCII spaces landing on an integer
+  field). On this C++ HLI, on `MacBook-Pro-de-Yohann.local` (Darwin 25.6.0,
+  arm64) on 2026-09-16, every one of the 13 `right_only` paths read back as
+  the DD invalid sentinel (`EMPTY_DOUBLE`/`EMPTY_INT`) on the converted side
+  -- no finding was printed. Re-run the test before treating that as a
+  statement about another build or host.
+- `cpp-test-shim-refusal-channels` (F4.4, `contract-assertion`, HDF5 builds): the same two
+  reads as F4.1, asserting that the map's `retyped` rule --
+  `grids_ggd/grid/space/coordinates_type` (an int array in DD 3.39.0, an array
+  of identifier structures in DD 4.1.1, no transformation reshapes one into
+  the other) -- is reported on all three refusal channels rather than merely
+  tolerated: the value is left absent, the path is named in the skipped-path
+  record, and the read reports `PARTIAL_READ`. Three structural checks show
+  the refusal was absorbed at the field, not by truncating its surroundings:
+  the enclosing containers survived, a field read after it within the same
+  structure arrived, and a field served later in the traversal (equilibrium's
+  root `time`) still agrees with the oracle. The two reads use independent
+  `IdsNs::IDS` objects (as F4.1 does), so the oracle read cannot reach the
+  converted read's own record; the program still copies that record out
+  before the oracle read runs, matching the ordering
+  `docs/SHIM_SUITE_CONVENTION.md` S5.4 states -- the record resets at the
+  start of each root operation -- so the assertion stays correct if a future
+  revision shares one object across both reads. `tests/shim/shim_refusal_match.h` is the shared
+  record-matching predicate the next refusal-family ticket reuses: it matches
+  the operation, the full DD path (on the tail of the message's `DD path: `
+  field, so it tolerates truncation and a future generator prefixing that
+  field with more context), the reason substring, and the refusal-status
+  band. It also checks all four unit-`redefined` globs: each value agrees with
+  the oracle and has no read skipped-path record. The test rejects any record
+  for the full DD path, which is stricter than recognizing only a particular
+  reason or refusal-band code, while still reusing the shared full
+  path/reason/band matcher; each rule-level failure names its id, kind, and
+  citation, and the two assertions per rule are counted from the table size.
+- `cpp-test-shim-nested-loss` (F5.1, `contract-assertion`, HDF5 builds,
+  issue #20): the program reads the full older-DD pulse and checks only
+  `PARTIAL_READ` and a nonempty skipped-path record. Its CMake wrapper requires
+  a clean program exit and an unchanged fixture, then inspects exactly one
+  file in a private directory cleaned before each run. It pins the format-1
+  marker and line-five header, checks seven columns on every row, and compares
+  the set of operation/fidelity/path triples for equality (duplicates allowed).
+  The 14 `LOSSY` and three `UNMAPPABLE` rows are explained in
+  `check_nested_loss_log.cmake`: the latter reflect array-of-structures open
+  refusals, including the retyped coordinates container. This pins a refusal
+  decision; a change to return empty containers may turn it red on an
+  improvement. Suspect that decision before a mapping regression, and check
+  DD shape before interpreting sibling fidelities. Historical unit-redefinition
+  refusals are removed into a separate known-defect set and each is reported
+  as `LOSS-LOG-REDEFINITION-FAILURE`, consistent with issue #19's served-value
+  assertions. `cpp-test-shim-loss-log-harness` (`harness`) tests the wrapper
+  from a literal report, including malformed files, exact-set differences,
+  known defects, fixture mutation, and nonzero program exits.
 - `cpp-test-shim-roundtrip-cross-dd` and `cpp-test-shim-roundtrip-same-dd`
   (F6.1--F6.2, `contract-assertion`): two registrations of one program that
   appends a curated `psi_axis` value at a COCOS sign-flip path, then reads the

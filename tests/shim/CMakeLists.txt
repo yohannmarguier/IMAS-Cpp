@@ -93,7 +93,9 @@ set_tests_properties( cpp-test-shim-comparison PROPERTIES
 # wraps the wrong reading in each. Counts the named sides this ticket's own
 # comparator test contributes; later tickets' rule programs raise the floor
 # as they add Compare() call sites of their own.
-set( AL_SHIM_VERDICT_ORIENTATION_FLOOR 11 )
+# Eleven sides are contributed by the comparator self-test; F4.1, F4.2 and
+# F4.3 add their own fixture-driven comparison call sites on top of that.
+set( AL_SHIM_VERDICT_ORIENTATION_FLOOR 62 )
 add_test( NAME cpp-test-shim-verdict-orientation
   COMMAND ${CMAKE_COMMAND}
     -D "SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}"
@@ -106,8 +108,8 @@ set_tests_properties( cpp-test-shim-verdict-orientation PROPERTIES
 
 # F1.4 fixture-provenance (docs/SHIM_SUITE_CONVENTION.md S3.2, S5.1): the
 # checked-in equilibrium pulses must be what imas-python-fixtures/ produces,
-# or every rule-table assertion this suite will ever make (issues #13, #14,
-# #24) is against numbers nobody can re-derive. verify_fixtures.sh
+# or every rule-table assertion this suite will ever make (issues #13--15,
+# #21, #24) is against numbers nobody can re-derive. verify_fixtures.sh
 # regenerates them outside the checkout and compares every HDF5 dataset with
 # h5diff -- registering it here is what turns that from a script somebody
 # may remember to run into a criterion the suite enforces.
@@ -131,7 +133,8 @@ else()
     "imas-python-fixtures/.venv (see its README) and h5diff" )
 endif()
 
-# The root every fixture-driven family in this suite (issues #13, #14, #24)
+# The root every fixture-driven family in this suite (issues #13--15, #21,
+# #24)
 # reads from.
 set( AL_SHIM_FIXTURE_ROOT "${CMAKE_SOURCE_DIR}/imas-python-fixtures/fixtures" )
 
@@ -171,7 +174,7 @@ set_tests_properties( cpp-test-shim-fixture-copy PROPERTIES
 # no AL call), so nothing here calls this function yet. It is part of this
 # ticket's scaffold anyway: the convention sets this rule "once, relied on
 # by every later ticket", and the contract-assertion and behaviour-pin
-# families (issues #12-14, #24) need it from their first test.
+# families (issues #12--15, #21, #24) need it from their first test.
 function( al_cpp_shim_private_loss_log test_name out_var )
   set( _dir "${CMAKE_CURRENT_BINARY_DIR}/${test_name}-loss-log" )
   add_test( NAME ${test_name}-loss-log-clean
@@ -376,7 +379,144 @@ else()
     al_cpp_shim_add_passthrough_scenario(
       cpp-test-shim-stamp-mismatch-no-artifact stamp-mismatch-no-artifact
       "${AL_SHIM_STAMP_MISMATCH_FIXTURE}" TRUE )
+
   endif()
+endif()
+
+# Family 4.1 (docs/SHIM_SUITE_CONVENTION.md S5.4, issue #15): compare each
+# structural conversion rule against the same equilibrium read from the DD
+# 4.1.1 oracle fixture.  This read-only family needs HDF5, but not the optional
+# Python/h5py tooling used solely to derive stamp variants above.
+if( AL_BACKEND_HDF5 )
+  add_executable( cpp-test-shim-structural-rules test_shim_structural_rules.cpp )
+  target_include_directories( cpp-test-shim-structural-rules PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} )
+  target_link_libraries( cpp-test-shim-structural-rules PRIVATE al-cpp )
+  al_cpp_shim_private_loss_log( cpp-test-shim-structural-rules
+    AL_SHIM_STRUCTURAL_LOSS_LOG_DIR )
+  add_test( NAME cpp-test-shim-structural-rules
+    COMMAND ${CMAKE_COMMAND}
+      -D "FIXTURE_ROOT=${AL_SHIM_FIXTURE_ROOT}"
+      -D "COMMAND_TO_RUN=$<TARGET_FILE:cpp-test-shim-structural-rules>;${AL_SHIM_FIXTURE_ROOT}"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_fixture_unchanged.cmake"
+  )
+  set_tests_properties( cpp-test-shim-structural-rules PROPERTIES
+    ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT};IMAS_MVDD_LOSS_LOG_DIR=${AL_SHIM_STRUCTURAL_LOSS_LOG_DIR}"
+    FIXTURES_REQUIRED cpp-test-shim-structural-rules-loss-log
+    LABELS "shim;contract-assertion"
+    FAIL_REGULAR_EXPRESSION "STRUCTURAL-FAILURE;SCENARIO-FAILURE"
+  )
+else()
+  message( STATUS "Not registering shim structural rules: HDF5 backend is disabled" )
+endif()
+
+# Family 4.2 (docs/SHIM_SUITE_CONVENTION.md S5.4, issue #16): check every
+# map-declared COCOS sign flip through the public HLI.
+if( AL_BACKEND_HDF5 )
+  add_executable( cpp-test-shim-cocos-rules test_shim_cocos_rules.cpp )
+  target_include_directories( cpp-test-shim-cocos-rules PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} )
+  target_link_libraries( cpp-test-shim-cocos-rules PRIVATE al-cpp )
+  al_cpp_shim_private_loss_log( cpp-test-shim-cocos-rules AL_SHIM_COCOS_LOSS_LOG_DIR )
+  add_test( NAME cpp-test-shim-cocos-rules
+    COMMAND ${CMAKE_COMMAND}
+      -D "FIXTURE_ROOT=${AL_SHIM_FIXTURE_ROOT}"
+      -D "COMMAND_TO_RUN=$<TARGET_FILE:cpp-test-shim-cocos-rules>;${AL_SHIM_FIXTURE_ROOT}"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_fixture_unchanged.cmake"
+  )
+  set_tests_properties( cpp-test-shim-cocos-rules PROPERTIES
+    ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT};IMAS_MVDD_LOSS_LOG_DIR=${AL_SHIM_COCOS_LOSS_LOG_DIR}"
+    FIXTURES_REQUIRED cpp-test-shim-cocos-rules-loss-log
+    LABELS "shim;contract-assertion"
+    FAIL_REGULAR_EXPRESSION "COCOS-FAILURE;SCENARIO-FAILURE"
+  )
+else()
+  message( STATUS "Not registering shim COCOS rules: HDF5 backend is disabled" )
+endif()
+
+# Family 4.3 (docs/SHIM_SUITE_CONVENTION.md S5.4, issue #17): the 13 paths the
+# newer dictionary introduced. Expects ONLY_ORACLE per rule -- the shim
+# correctly serves nothing, and the oracle holds a real value proving the
+# comparison is not vacuous -- plus the D6 vacuity demonstration required of
+# this family: a served-nothing reading must fail a real structural rule's own
+# agreement expectation, or a shim that served nothing at all would satisfy
+# every right-only rule for the wrong reason. Shares the same two-read shape
+# and HDF5-only gating as F4.1.
+if( AL_BACKEND_HDF5 )
+  add_executable( cpp-test-shim-right-only-rules test_shim_right_only.cpp )
+  target_include_directories( cpp-test-shim-right-only-rules PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} )
+  target_link_libraries( cpp-test-shim-right-only-rules PRIVATE al-cpp )
+  al_cpp_shim_private_loss_log( cpp-test-shim-right-only-rules
+    AL_SHIM_RIGHT_ONLY_LOSS_LOG_DIR )
+  add_test( NAME cpp-test-shim-right-only-rules
+    COMMAND ${CMAKE_COMMAND}
+      -D "FIXTURE_ROOT=${AL_SHIM_FIXTURE_ROOT}"
+      -D "COMMAND_TO_RUN=$<TARGET_FILE:cpp-test-shim-right-only-rules>;${AL_SHIM_FIXTURE_ROOT}"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_fixture_unchanged.cmake"
+  )
+  set_tests_properties( cpp-test-shim-right-only-rules PROPERTIES
+    ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT};IMAS_MVDD_LOSS_LOG_DIR=${AL_SHIM_RIGHT_ONLY_LOSS_LOG_DIR}"
+    FIXTURES_REQUIRED cpp-test-shim-right-only-rules-loss-log
+    LABELS "shim;contract-assertion"
+    FAIL_REGULAR_EXPRESSION "RIGHT-ONLY-FAILURE;SCENARIO-FAILURE"
+  )
+else()
+  message( STATUS "Not registering shim right-only rules: HDF5 backend is disabled" )
+endif()
+
+# Family 4.4 (docs/SHIM_SUITE_CONVENTION.md S5.4, issue #18): the map's one
+# `retyped` rule -- grids_ggd/grid/space/coordinates_type -- must be reported
+# on all three channels (value, refused-path record, status), not merely
+# survived. Same two reads as F4.1, read-only, so it needs HDF5 for the same
+# reason.
+if( AL_BACKEND_HDF5 )
+  add_executable( cpp-test-shim-refusal-channels test_shim_refusal_channels.cpp )
+  target_include_directories( cpp-test-shim-refusal-channels PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} )
+  target_link_libraries( cpp-test-shim-refusal-channels PRIVATE al-cpp )
+  al_cpp_shim_private_loss_log( cpp-test-shim-refusal-channels
+    AL_SHIM_REFUSAL_CHANNELS_LOSS_LOG_DIR )
+  add_test( NAME cpp-test-shim-refusal-channels
+    COMMAND ${CMAKE_COMMAND}
+      -D "FIXTURE_ROOT=${AL_SHIM_FIXTURE_ROOT}"
+      -D "COMMAND_TO_RUN=$<TARGET_FILE:cpp-test-shim-refusal-channels>;${AL_SHIM_FIXTURE_ROOT}"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_fixture_unchanged.cmake"
+  )
+  set_tests_properties( cpp-test-shim-refusal-channels PROPERTIES
+    ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT};IMAS_MVDD_LOSS_LOG_DIR=${AL_SHIM_REFUSAL_CHANNELS_LOSS_LOG_DIR}"
+    FIXTURES_REQUIRED cpp-test-shim-refusal-channels-loss-log
+    LABELS "shim;contract-assertion"
+    FAIL_REGULAR_EXPRESSION "REFUSAL-CHANNELS-FAILURE;SCENARIO-FAILURE"
+  )
+else()
+  message( STATUS "Not registering shim refusal channels: HDF5 backend is disabled" )
+endif()
+
+# Family 5.1 (issue #20): require both a partial read and the exact public
+# loss-log set, with the historical redefinition defects reported separately.
+add_test( NAME cpp-test-shim-loss-log-harness
+  COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/check_nested_loss_harness.cmake"
+)
+set_tests_properties( cpp-test-shim-loss-log-harness PROPERTIES
+  LABELS "shim;harness"
+  FAIL_REGULAR_EXPRESSION "LOSS-HARNESS-FAILURE"
+)
+if( AL_BACKEND_HDF5 )
+  add_executable( cpp-test-shim-nested-loss test_shim_nested_loss.cpp )
+  target_link_libraries( cpp-test-shim-nested-loss PRIVATE al-cpp )
+  al_cpp_shim_private_loss_log( cpp-test-shim-nested-loss AL_SHIM_NESTED_LOSS_LOG_DIR )
+  add_test( NAME cpp-test-shim-nested-loss
+    COMMAND ${CMAKE_COMMAND}
+      -D "FIXTURE_ROOT=${AL_SHIM_FIXTURE_ROOT}/dd-3.39.0"
+      -D "LOSS_LOG_DIR=${AL_SHIM_NESTED_LOSS_LOG_DIR}"
+      -D "COMMAND_TO_RUN=$<TARGET_FILE:cpp-test-shim-nested-loss>;${AL_SHIM_FIXTURE_ROOT}/dd-3.39.0"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/check_nested_loss_log.cmake"
+  )
+  set_tests_properties( cpp-test-shim-nested-loss PROPERTIES
+    ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT};IMAS_MVDD_LOSS_LOG_DIR=${AL_SHIM_NESTED_LOSS_LOG_DIR}"
+    FIXTURES_REQUIRED cpp-test-shim-nested-loss-loss-log
+    LABELS "shim;contract-assertion"
+    FAIL_REGULAR_EXPRESSION "NESTED-LOSS-FAILURE;LOSS-LOG-FAILURE;LOSS-LOG-REDEFINITION-FAILURE;SCENARIO-FAILURE"
+  )
+else()
+  message( STATUS "Not registering shim nested loss: HDF5 backend is disabled" )
 endif()
 
 # Family 6 (docs/SHIM_SUITE_CONVENTION.md S5.6, issue #21): one program
