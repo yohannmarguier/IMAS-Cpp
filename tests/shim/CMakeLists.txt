@@ -383,7 +383,7 @@ else()
         FIXTURES_REQUIRED "${test_name}-loss-log"
         LABELS "shim;contract-assertion"
         ENVIRONMENT "${_environment}"
-        FAIL_REGULAR_EXPRESSION "PASSTHROUGH-FAILURE|SCENARIO-FAILURE"
+        FAIL_REGULAR_EXPRESSION "PASSTHROUGH-FAILURE;SCENARIO-FAILURE"
       )
     endfunction()
 
@@ -638,7 +638,7 @@ else()
     FIXTURES_REQUIRED "cpp-test-shim-torn-write-fixture;cpp-test-shim-torn-write-loss-log"
     LABELS "shim;behaviour-pin"
     ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT};IMAS_MVDD_LOSS_LOG_DIR=${_torn_write_loss_log_dir}"
-    FAIL_REGULAR_EXPRESSION "TORN-WRITE-FAILURE|SCENARIO-FAILURE"
+    FAIL_REGULAR_EXPRESSION "TORN-WRITE-FAILURE;SCENARIO-FAILURE"
   )
 
   # F6.4 `full-put-stamp` (docs/SHIM_SUITE_CONVENTION.md S5.6, issue #23): a
@@ -664,6 +664,6 @@ else()
     FIXTURES_REQUIRED "cpp-test-shim-full-put-stamp-fixture;cpp-test-shim-full-put-stamp-loss-log"
     LABELS "shim;contract-assertion"
     ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT};IMAS_MVDD_LOSS_LOG_DIR=${_full_put_stamp_loss_log_dir}"
-    FAIL_REGULAR_EXPRESSION "FULL-PUT-STAMP-FAILURE|SCENARIO-FAILURE"
+    FAIL_REGULAR_EXPRESSION "FULL-PUT-STAMP-FAILURE;SCENARIO-FAILURE"
   )
 endif()
