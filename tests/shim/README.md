@@ -5,6 +5,58 @@ This directory holds the Tier-1 shim conformance suite described in
 `AL_USE_MULTIVERSION_SHIM=ON`; with shim mode off the registered test list is
 exactly what it was before this suite existed.
 
+## Profile and direction
+
+This HLI is **Profile A — tolerating** (`docs/SHIM_SUITE_CONVENTION.md` S2.3):
+a refused read does not abort the traversal, the read reports a distinct
+`PARTIAL_READ`/`PARTIAL_PUT` status, and `getSkippedPaths()` names the exact
+DD path a refusal landed on. That is what makes the full F4/F5 catalogue below
+implementable at all; an aborting HLI could not run most of it without either
+narrowing its reads or adding tolerance first.
+
+The suite runs **one direction** (S1 D2): this HLI, built against **DD
+4.1.1**, reads and writes the checked-in **DD 3.39.0** fixture through the
+shim (the *converted* reading); the same HLI reads the checked-in DD 4.1.1
+fixture same-version as the *oracle* (nothing converts). It does not build a
+second binary against DD 3.39.0, so the reverse direction — rules that cover a
+path DD 3 had and DD 4 dropped — is never exercised here; see "Coverage
+boundaries" below.
+
+## Scenario catalogue (issue #24)
+
+`docs/SHIM_SUITE_CONVENTION.md` S5 lists eighteen assertions in six families
+and says an implementing HLI **SHOULD** implement all eighteen and **MUST**
+state which it omitted and why. All eighteen are implemented; none are
+omitted.
+
+| id | scenario | label | ctest test |
+|---|---|---|---|
+| F1.1 | linkage | `harness` | `cpp-test-shim-linkage` |
+| F1.2 | comparison | `harness` | `cpp-test-shim-comparison` |
+| F1.3 | verdict-orientation | `harness` | `cpp-test-shim-verdict-orientation` |
+| F1.4 | fixture-provenance | `harness` | `cpp-test-shim-fixture-provenance` |
+| F2.1 | version-unset | `contract-assertion` | `cpp-test-shim-version-unset` |
+| F2.2 | stamp-equal | `contract-assertion` | `cpp-test-shim-stamp-equal` |
+| F2.3 | stamp-absent | `contract-assertion` | `cpp-test-shim-stamp-absent` |
+| F2.4 | stamp-mismatch-no-artifact | `contract-assertion` | `cpp-test-shim-stamp-mismatch-no-artifact` |
+| F3.1 | stamp-malformed | `contract-assertion` | `cpp-test-shim-stamp-malformed` |
+| F4.1 | structural-rules | `contract-assertion` | `cpp-test-shim-structural-rules` |
+| F4.2 | cocos-rules | `contract-assertion` | `cpp-test-shim-cocos-rules` |
+| F4.3 | right-only-rules | `contract-assertion` | `cpp-test-shim-right-only-rules` |
+| F4.4 | refusal-rules | `contract-assertion` | `cpp-test-shim-refusal-channels` |
+| F5.1 | nested-loss | `contract-assertion` + `harness` | `cpp-test-shim-nested-loss` (asserted), `cpp-test-shim-loss-log-harness` (harness self-test) |
+| F6.1 | roundtrip-cross-dd | `contract-assertion` | `cpp-test-shim-roundtrip-cross-dd` |
+| F6.2 | roundtrip-same-dd | `contract-assertion` | `cpp-test-shim-roundtrip-same-dd` |
+| F6.3 | torn-write | `behaviour-pin` | `cpp-test-shim-torn-write` |
+| F6.4 | full-put-stamp | `contract-assertion` | `cpp-test-shim-full-put-stamp` |
+
+`cpp-test-shim-run-guard` and `cpp-test-shim-fixture-copy`/
+`cpp-test-shim-fixture-digest`/`cpp-test-shim-stamp-variants` are this suite's
+own harness self-tests (D6 run guards, the private-copy and unchanged-fixture
+helpers, and the derived stamp-state fixtures) rather than catalogue
+scenarios; they exist to make the eighteen above trustworthy, not to add a
+nineteenth.
+
 ## Scope so far (issues #10, #11, #12, #13, #14, #15, #16, #17, #18, #19, #20, #21, #22, #23)
 
 Issue #10 registered the suite's scaffold and its first test.
@@ -276,24 +328,125 @@ ctest --test-dir <shim-build> -L shim --output-on-failure
 ctest --test-dir <shim-build> -L harness --output-on-failure
 ```
 
-The five F2/F3 `contract-assertion` tests follow
-`docs/SHIM_SUITE_CONVENTION.md` S1 D5 and stay red while the shim disagrees,
-never inverted, quarantined, or softened to match observed behaviour.
+Every `contract-assertion` test (F2.1-F2.4, F3.1, F4.1-F4.4, F5.1, F6.1-F6.2,
+F6.4 — see "Scenario catalogue" above) follows `docs/SHIM_SUITE_CONVENTION.md`
+S1 D5 and stays red while the shim disagrees, never inverted, quarantined, or
+softened to match observed behaviour.
 `cpp-test-shim-torn-write` (F6.3) is this suite's one `behaviour-pin`: it
 preserves an accepted limitation (no rollback on a refused write) rather than
 asserting a requirement of the shim, so nothing here should ever change to
 give it atomic rollback.
 
-## Contract assertions known to be red
+## Red list
 
-There are none. `cpp-test-shim-stamp-malformed` passed on 2026-09-15 on
-`MacBook-Pro-de-Yohann.local` (Darwin 25.6.0, arm64), after the fixture
-provenance and stamp-variant checks passed. The shim loaded IMAS-Core commit
-`dae4abdd9428bd28f47063f8f575bdc8abd915f2` from
-`cmake-build-debug-shim/_deps/al-core-build/libal.5.7.2.86.dylib`. Re-run the
-shim-labelled suite and its linkage check before treating that observation as
-a statement about another shim or IMAS-Core build.
+There are no `contract-assertion` tests currently red.
 
-This suite is not wired into CI. Wiring it in is a decision to take
-explicitly, once its profile, direction, and coverage boundaries are
-published (S1 D5) alongside the loaded IMAS-Core.
+This is what a full run of `ctest -L shim` printed on **2026-09-17** on
+`MacBook-Pro-de-Yohann.local` (Darwin 25.6.0, arm64): 42 shim-labelled tests
+(14 `contract-assertion`, 1 `behaviour-pin`, 9 `harness`, plus their
+fixture/loss-log-clean setup registrations), **all passed**. The build loaded:
+
+- **Shim**: IMAS-Multiversion-DD-Loader `v0.2.0-58-g51e64b0`
+  (`51e64b05a34e7fb1ebf495885eaae8085903d2b7`),
+  `libimas_mvdd_loader.0.1.0.dylib`.
+- **IMAS-Core**: commit `dae4abdd9428bd28f47063f8f575bdc8abd915f2`,
+  `libal.5.7.2.86.dylib` — the fork commit carrying the path-aware HDF5 delete
+  fix (IMAS-Core #63/#64) that F6.4 depends on (see below).
+
+Per `docs/SHIM_SUITE_CONVENTION.md` S1 D5, three rules govern this list, each
+learned the hard way by IMAS-Fortran:
+
+1. **Observed, not inferred.** This entry is what the run above printed, not a
+   reconstruction from tickets or commit messages — reds that emerge only from
+   a particular combination of shim and core appear in no ticket.
+2. **The IMAS-Core matters.** F6.4 (`full-put-stamp`) is red against a
+   plain upstream IMAS-Core whose HDF5 delete ignores its `path` argument (see
+   the note under F6.4's description above), and green against the fork commit
+   named here, for a reason living in neither this repository nor the shim. A
+   count of reds without the core named describes a different system than the
+   reader's.
+3. **Corrected entries are kept, not deleted.** If a future run finds this list
+   wrong — the wrong owner, the wrong seam, a scenario that turns out red for a
+   reason nobody looked for — the correction is recorded here in place, and the
+   superseded belief stays visible rather than being erased. There is nothing
+   to correct yet.
+
+**An empty red list is a weaker statement than it looks** (D6). It says
+nothing was red in *this* run, on *this* machine, against *this* shim and
+*this* core — not that the suite was sensitive enough to notice a real
+regression. That is exactly what the linkage check (F1.1), the run guards on
+every program, and the vacuity demonstration in F4.3 are for: most of these
+tests pass by *not printing*, so a build that converted nothing would pass
+exactly like a build that converted everything, if nothing else here caught
+that. Re-run the shim-labelled suite (and `cpp-test-shim-linkage` first)
+before treating this observation as a statement about another machine, shim,
+or IMAS-Core build.
+
+## Coverage boundaries
+
+These are boundaries, not disclaimers (`docs/SHIM_SUITE_CONVENTION.md` S8),
+restated for this HLI:
+
+1. **One direction.** This suite is a DD 4.1.1 HLI reading and writing a DD
+   3.39.0 pulse, in that direction only (see "Profile and direction" above).
+   The reverse needs a second from-scratch build of `al-cpp` against DD
+   3.39.0, which this repository does not produce. In the shipped
+   `imas-python-fixtures/` artifact that leaves the **23 `left_only` rules**
+   (paths DD 3.39.0 had and DD 4.1.1 dropped) permanently unreachable here.
+2. **A rule, not every leaf, is the unit of assertion** (D3). F4.1's
+   `structural-rules` samples multi-leaf rules (see `shim_rule_table.h`); a
+   shim serving only part of a subtree a rule governs escapes detection.
+3. **No C-ABI tests** (D1). Nothing here binds an `imas_mvdd_*` symbol; the
+   shim repository owns seam-level coverage (a mid-fan-out delete failure, a
+   null buffer, a bad loss-export index) that no HLI call can reach.
+4. **One named exception reaches below the public return value.**
+   `cpp-test-shim-stamp-malformed` (F3.1) reads its frozen refusal *reason*
+   from generated `get`'s standard output, because that message is printed at
+   the occurrence-open seam but not returned to the caller. It is guarded by
+   first asserting the refusal-band status through the public API. This is the
+   suite's only assertion that looks past what a caller of the public HLI can
+   observe.
+5. **Per-candidate delete effects are not observable.** The HDF5 backend's
+   delete ignores its `path` argument and removes the whole occurrence, so a
+   candidate fan-out (as F6.4's full `put()` exercises) collapses to one
+   whole-occurrence deletion from this suite's vantage point. The call
+   sequence would need a recording stub in the shim repository to test
+   separately from the on-disk consequence.
+6. **Timebase conversion beyond identity is untested.** `time` is untouched by
+   any rule in the shipped conversion map, so F6.1/F6.2's round trip and every
+   other scenario here exercise timebase resolution at exact fidelity only.
+7. **`datapath` translation on a first open is untested.** It only fires from
+   an occurrence's second open onward, and no scenario here reopens an
+   occurrence a second time.
+8. **Merged-rule loss is ambiguity, not a measurement.** The shim never reads
+   a merged field's untried candidates to check whether they held different
+   data; the `PotentiallyLossy`/`LOSSY` fidelity F5.1 pins for those rows is a
+   statement about the *rule*, never a verified fact about the occurrence.
+
+## Asks of the shim, carried forward
+
+Three surfaces this convention — and therefore this suite — depends on
+(`docs/SHIM_SUITE_CONVENTION.md` S10), reproduced here so a second HLI adopting
+the convention makes the same asks rather than working around them silently:
+
+1. **Keep the loss file's format marker, preamble, column order, filename
+   pattern and `IMAS_MVDD_LOSS_LOG_DIR` semantics as a versioned contract.**
+   It is the only loss channel this Tier-1 suite has (F5.1,
+   `cpp-test-shim-loss-log-harness`).
+2. **Publish a flattened, machine-readable rule manifest.** The externally
+   reachable conversion map has unresolved `<include>`s (S4.5), which is why
+   `shim_rule_table.h` is hand-authored rather than generated. A manifest
+   would let that table be generated and checked instead of merely trusted.
+3. **Provide a preflight check for dynamic loading and ABI compatibility.**
+   Today a missing or incompatible IMAS-Core surfaces as a generic failure a
+   contributor can mistake for a conversion-contract violation (S2.2).
+
+## CI
+
+This suite is not wired into CI, and that is a deliberate choice, not an
+oversight: a suite designed to be able to start red (D5 — `contract-assertion`
+tests stay red while the shim disagrees, never inverted or quarantined) cannot
+gate anything until its red list is empty and stays that way. Wiring it into
+CI is a decision to take explicitly, once its profile, direction, and coverage
+boundaries are published here alongside the loaded IMAS-Core — which this
+document now does.
