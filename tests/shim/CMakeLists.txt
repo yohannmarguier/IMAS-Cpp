@@ -568,10 +568,15 @@ else()
         -D "SAME_RESULT_FILE=${_pair_same_loss_log_dir}/roundtrip-passed"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/run_roundtrip_pair.cmake"
     )
+    # `harness`, not `contract-assertion`: this registration is the runner that
+    # owns the two program invocations, and F6.1/F6.2 below are the statements
+    # about the agreement. Labelling it contract-assertion too would make
+    # `-L contract-assertion` return three tests for two catalogue rows and
+    # report a single round-trip failure three times over.
     set_tests_properties( ${_pair_test} PROPERTIES
       FIXTURES_SETUP ${_pair_test}
       FIXTURES_REQUIRED "${_pair_test}-cross-fixture;${_pair_test}-same-fixture;${_pair_test}-cross-loss-log;${_pair_test}-same-loss-log"
-      LABELS "shim;contract-assertion"
+      LABELS "shim;harness"
       ENVIRONMENT "${AL_CPP_SHIM_TEST_ENVIRONMENT}"
       FAIL_REGULAR_EXPRESSION "ROUNDTRIP-FAILURE"
     )
