@@ -13,8 +13,10 @@ if( AL_DEVELOPMENT_LAYOUT AND AL_DOWNLOAD_DEPENDENCIES )
     set( AL_DOWNLOAD_DEPENDENCIES OFF CACHE BOOL "Automatically download assets from the AL git
     repository" FORCE )
 endif()
-set( AL_CORE_GIT_REPOSITORY "https://github.com/iterorganization/IMAS-Core.git" CACHE STRING "Git repository of AL-core" )
-set( AL_CORE_VERSION "main" CACHE STRING "Git commit/tag/branch of AL-core" )
+set( AL_CORE_GIT_REPOSITORY_DEFAULT "https://github.com/iterorganization/IMAS-Core.git" )
+set( AL_CORE_VERSION_DEFAULT "main" )
+set( AL_CORE_GIT_REPOSITORY "${AL_CORE_GIT_REPOSITORY_DEFAULT}" CACHE STRING "Git repository of AL-core" )
+set( AL_CORE_VERSION "${AL_CORE_VERSION_DEFAULT}" CACHE STRING "Git commit/tag/branch of AL-core" )
 
 if( AL_USE_MULTIVERSION_SHIM AND AL_DOWNLOAD_DEPENDENCIES )
   # Pin IMAS-Core to a revision carrying the path-aware HDF5 delete fix, by
@@ -32,13 +34,34 @@ if( AL_USE_MULTIVERSION_SHIM AND AL_DOWNLOAD_DEPENDENCIES )
   #
   # Return to upstream (AL_CORE_GIT_REPOSITORY's default) once the fix lands
   # there, by removing this block rather than editing the values below.
-  message( STATUS
-    "AL_USE_MULTIVERSION_SHIM=ON: pinning AL-core to the path-aware HDF5 "
-    "delete fix (dae4abdd9428bd28f47063f8f575bdc8abd915f2)" )
-  set( AL_CORE_GIT_REPOSITORY "https://github.com/yohannmarguier/IMAS-Core.git" CACHE STRING
-    "Git repository of AL-core" FORCE )
-  set( AL_CORE_VERSION "dae4abdd9428bd28f47063f8f575bdc8abd915f2" CACHE STRING
-    "Git commit/tag/branch of AL-core" FORCE )
+  #
+  # The pin applies only while both variables still hold either their defaults
+  # (a first configure) or the pinned values themselves (a re-configure of a
+  # tree this block already pinned). A user who passed
+  # -D AL_CORE_GIT_REPOSITORY or -D AL_CORE_VERSION named the Core they want
+  # built against; overriding that with FORCE would silently build something
+  # other than what they asked for.
+  set( AL_CORE_SHIM_PIN_REPOSITORY "https://github.com/yohannmarguier/IMAS-Core.git" )
+  set( AL_CORE_SHIM_PIN_VERSION "dae4abdd9428bd28f47063f8f575bdc8abd915f2" )
+
+  if( ( "${AL_CORE_GIT_REPOSITORY}" STREQUAL "${AL_CORE_GIT_REPOSITORY_DEFAULT}"
+        OR "${AL_CORE_GIT_REPOSITORY}" STREQUAL "${AL_CORE_SHIM_PIN_REPOSITORY}" )
+      AND ( "${AL_CORE_VERSION}" STREQUAL "${AL_CORE_VERSION_DEFAULT}"
+            OR "${AL_CORE_VERSION}" STREQUAL "${AL_CORE_SHIM_PIN_VERSION}" ) )
+    message( STATUS
+      "AL_USE_MULTIVERSION_SHIM=ON: pinning AL-core to the path-aware HDF5 "
+      "delete fix (${AL_CORE_SHIM_PIN_VERSION})" )
+    set( AL_CORE_GIT_REPOSITORY "${AL_CORE_SHIM_PIN_REPOSITORY}" CACHE STRING
+      "Git repository of AL-core" FORCE )
+    set( AL_CORE_VERSION "${AL_CORE_SHIM_PIN_VERSION}" CACHE STRING
+      "Git commit/tag/branch of AL-core" FORCE )
+  else()
+    message( STATUS
+      "AL_USE_MULTIVERSION_SHIM=ON: keeping the requested AL-core "
+      "(${AL_CORE_GIT_REPOSITORY}@${AL_CORE_VERSION}) instead of the "
+      "path-aware HDF5 delete fix pin. Without that fix, the tests/shim "
+      "full-put scenario (F6.4) is expected to be red." )
+  endif()
 endif()
 
 include(FetchContent)
