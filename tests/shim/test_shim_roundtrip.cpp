@@ -24,6 +24,11 @@ constexpr int kExpectedAssertions = 13;
 constexpr double kAppendedTime = 2.0;
 constexpr double kCuratedPsiAxis = -7654321.0;
 
+// The harness's one explicit argument (S5.6: `clean-read` /
+// `partial-read-allowed`, no default). It governs every status the run
+// checks -- both whole-occurrence reads and the append -- because "the
+// control must be clean" is a statement about the control run, not about one
+// of its calls.
 enum class ReadPolicy { Clean, PartialAllowed };
 
 bool parseReadPolicy(const char* text, ReadPolicy& policy) {
@@ -41,6 +46,17 @@ bool parseReadPolicy(const char* text, ReadPolicy& policy) {
 bool readMatchesPolicy(int status, ReadPolicy policy) {
   return policy == ReadPolicy::Clean ? status == 0
                                      : status == 0 || status == IdsNs::PARTIAL_READ;
+}
+
+// The same two-value policy governs the append. Under `clean-read` the control
+// appends only paths the same-version pulse already holds, so nothing can
+// legitimately be refused: tolerating PARTIAL_PUT there would let the control
+// pass while silently dropping the very write it exists to compare against,
+// which is what makes the cross-DD round trip meaningful. F6.3 owns the
+// refused-write case on its own fixture.
+bool putMatchesPolicy(int status, ReadPolicy policy) {
+  return policy == ReadPolicy::Clean ? status == 0
+                                     : status == 0 || status == IdsNs::PARTIAL_PUT;
 }
 
 void expect(bool condition, const char* detail, int& assertions, int& failures) {
@@ -101,8 +117,8 @@ int main(int argc, char* argv[]) {
   append._equilibrium.time_slice(0).global_quantities.psi_axis = kCuratedPsiAxis;
 
   const int putSliceStatus = append._equilibrium.putSlice();
-  expect(putSliceStatus >= 0,
-         "the mapped slice append aborted instead of completing best effort", assertions, failures);
+  expect(putMatchesPolicy(putSliceStatus, readPolicy),
+         "the mapped slice append violated its explicit policy", assertions, failures);
   append.close();
 
   IdsNs::IDS readback;
