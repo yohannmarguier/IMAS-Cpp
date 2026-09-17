@@ -172,35 +172,38 @@ int main(int argc, char* argv[]) {
          failures);
 
   // Channel 3: status.
-  expect(convertedStatus == IdsNs::PARTIAL_READ,
-         "the cross-version read of the retyped path did not report a partial outcome", assertions,
-         failures);
+  expectRule(convertedStatus == IdsNs::PARTIAL_READ, *rule,
+             "the cross-version read of the retyped path did not report a partial outcome",
+             assertions, failures);
 
   // Channel 1: value. Left absent, not converted and not defaulted.
-  expect(converted.grids_ggd(0).grid(0).space(0).coordinates_type.extent(0) == 0,
-         "the retyped path was not left absent in the returned IDS", assertions, failures);
+  expectRule(converted.grids_ggd(0).grid(0).space(0).coordinates_type.extent(0) == 0, *rule,
+             "the retyped path was not left absent in the returned IDS", assertions, failures);
 
   // Channel 2: refused-path record. Match the operation, the full DD path
   // (on its tail, docs/SHIM_INTEGRATION_CONTRACT.md S8.1), the reason, and
   // the status band -- three things and no fewer.
   const IdsNs::SkippedPath* refusal = ShimTest::findRefusalByPath(
       convertedSkippedPaths, IdsNs::SkippedPath::Operation::Read, rule->hliPath);
-  expect(refusal != nullptr, "the retyped path's refusal is not present in the skipped-path record",
-         assertions, failures);
-  expect(refusal != nullptr && ShimTest::refusalNamesReason(*refusal, ShimRuleTable::kRetypedRefusalReason),
-         "the refusal record's message does not name the retyped-container reason", assertions, failures);
-  expect(refusal != nullptr && ShimTest::refusalInBand(*refusal),
-         "the refusal record's status is not in the refusal band", assertions, failures);
+  expectRule(refusal != nullptr, *rule,
+             "the retyped path's refusal is not present in the skipped-path record", assertions,
+             failures);
+  expectRule(refusal != nullptr && ShimTest::refusalNamesReason(*refusal, ShimRuleTable::kRetypedRefusalReason),
+             *rule, "the refusal record's message does not name the retyped-container reason",
+             assertions, failures);
+  expectRule(refusal != nullptr && ShimTest::refusalInBand(*refusal), *rule,
+             "the refusal record's status is not in the refusal band", assertions, failures);
 
   // The refusal is absorbed at the field, not by truncating the traversal
   // around it: the containers directly enclosing it survived, a field read
   // after it within the same "space" structure arrived, and a field read
   // later still (equilibrium's root "time", after the whole grids_ggd and
   // time_slice traversal) still agrees with the oracle.
-  expect(hasSpaceContainer(converted), "the containers around the refused path did not survive",
-         assertions, failures);
-  expect(converted.grids_ggd(0).grid(0).space(0).objects_per_dimension.extent(0) > 0,
-         "a field read after the refusal within the same structure did not arrive", assertions, failures);
+  expectRule(hasSpaceContainer(converted), *rule,
+             "the containers around the refused path did not survive", assertions, failures);
+  expectRule(converted.grids_ggd(0).grid(0).space(0).objects_per_dimension.extent(0) > 0, *rule,
+             "a field read after the refusal within the same structure did not arrive", assertions,
+             failures);
 
   const std::vector<double> oracleTime(oracle.time.data(), oracle.time.data() + oracle.time.numElements());
   const std::vector<double> convertedTime(converted.time.data(),
@@ -208,9 +211,9 @@ int main(int argc, char* argv[]) {
   const ShimTest::Verdict laterFieldVerdict =
       ShimTest::Compare(/*oracle=*/ ShimTest::OracleReading(oracleTime),
                         /*converted=*/ ShimTest::ConvertedReading(convertedTime));
-  expect(laterFieldVerdict == ShimTest::Verdict::Same,
-         "a served field from later in the traversal no longer agrees with the oracle", assertions,
-         failures);
+  expectRule(laterFieldVerdict == ShimTest::Verdict::Same, *rule,
+             "a served field from later in the traversal no longer agrees with the oracle",
+             assertions, failures);
 
   // A unit redefinition changes a label, not the number in either fixture.
   // The value comparison alone would therefore also pass if the shim silently
