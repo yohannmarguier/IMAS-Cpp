@@ -248,9 +248,13 @@ templates with `mode` names that mirror the generated methods: `CLASS_DEFINITION
 `METHOD_PUT` / `PUT_SINGLE`, `METHOD_GET` / `GET_SINGLE`, `METHOD_PUT_SLICE`,
 `METHOD_VALIDATE` and the `VALIDATE_*` family, `RESET`, `DELETE`, `DUMP`,
 `DISCARD_CACHE`. When changing behaviour of a generated method, find the matching mode.
-The named `HANDLE_AOS_OPEN_STATUS` template centralises the shared read/write refusal
+The named `BEGIN_AOS_OPEN_STATUS_BRANCH` template centralises the shared read/write refusal
 decision emitted after every array-of-structures open; keep branch-specific traversal in
-`GET_SINGLE` and `PUT_SINGLE` rather than duplicating that policy block.
+`GET_SINGLE` and `PUT_SINGLE` rather than duplicating that policy block. It emits an
+unterminated branch on purpose, so every call site must follow it immediately with the
+`else` (write) or `else if (...)` (read) carrying the open-succeeded traversal — the guard
+condition differs per site, which is why that `else` cannot live in the template. Without
+one, a tolerated refusal falls through into the traversal it was meant to skip.
 Both stylesheets take `DD_GIT_DESCRIBE` and `AL_GIT_DESCRIBE` parameters, which end up as
 the `al_dd_version` / `al_cpp_version` constants.
 

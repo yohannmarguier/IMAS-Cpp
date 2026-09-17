@@ -2473,7 +2473,20 @@ See IDSDef2Classes.xsl  -->
 <!--       put field       -->
 <!--=================================================-->
 
-<xsl:template name="HANDLE_AOS_OPEN_STATUS">
+<!--
+     The shared read/write refusal decision emitted after every
+     al_begin_arraystruct_action. It deliberately emits an *unterminated*
+     branch: a fatal refusal returns, a tolerated one records the partial
+     status, and the call site then supplies the matching `else` (write) or
+     `else if (...)` (read, whose guard condition differs per site) carrying
+     the traversal for the branch where the open succeeded.
+
+     So every call site MUST be followed immediately by an `else` or
+     `else if`. Without one, a tolerated refusal falls straight through into
+     the traversal it was supposed to skip. The condition varies per site,
+     which is why the `else` cannot live in here.
+-->
+<xsl:template name="BEGIN_AOS_OPEN_STATUS_BRANCH">
 <xsl:param name="operation"/>
 <xsl:param name="partialStatus"/>
 			if (IdsNs::Ids::mustAbort(al_status, SkippedPath::Operation::<xsl:value-of select="$operation"/>, fieldPath, skippedPaths, __FILE__, __LINE__, __func__))
@@ -2526,7 +2539,7 @@ See IDSDef2Classes.xsl  -->
 			arraySize = <xsl:value-of select = "@name"/>.extent(0);
 
 				al_status = al_begin_arraystruct_action(ctx, fieldPath.c_str(), timeBasePath.c_str(), &amp;arraySize, &amp;aosCtx);
-			<xsl:call-template name="HANDLE_AOS_OPEN_STATUS">
+			<xsl:call-template name="BEGIN_AOS_OPEN_STATUS_BRANCH">
 				<xsl:with-param name="operation" select="'Write'"/>
 				<xsl:with-param name="partialStatus" select="'PARTIAL_PUT'"/>
 			</xsl:call-template>
@@ -2579,7 +2592,7 @@ See IDSDef2Classes.xsl  -->
 			arraySize = <xsl:value-of select = "@name"/>.extent(0);
 
 				al_status = al_begin_arraystruct_action(ctx, fieldPath.c_str(), timeBasePath.c_str(), &amp;arraySize, &amp;aosCtx);
-			<xsl:call-template name="HANDLE_AOS_OPEN_STATUS">
+			<xsl:call-template name="BEGIN_AOS_OPEN_STATUS_BRANCH">
 				<xsl:with-param name="operation" select="'Write'"/>
 				<xsl:with-param name="partialStatus" select="'PARTIAL_PUT'"/>
 			</xsl:call-template>
@@ -2638,7 +2651,7 @@ See IDSDef2Classes.xsl  -->
 			if(idsTimeMode != IDS_TIME_MODE_INDEPENDENT)
 			{	
 				al_status = al_begin_arraystruct_action(ctx, fieldPath.c_str(), timeBasePath.c_str(), &amp;arraySize, &amp;aosCtx);
-			<xsl:call-template name="HANDLE_AOS_OPEN_STATUS">
+			<xsl:call-template name="BEGIN_AOS_OPEN_STATUS_BRANCH">
 				<xsl:with-param name="operation" select="'Write'"/>
 				<xsl:with-param name="partialStatus" select="'PARTIAL_PUT'"/>
 			</xsl:call-template>
@@ -2780,7 +2793,7 @@ See IDSDef2Classes.xsl  -->
 			</xsl:choose>
 			timeBasePath = "";
 			al_status = al_begin_arraystruct_action(ctx, fieldPath.c_str(), timeBasePath.c_str(), &amp;arraySize, &amp;aosCtx);
-			<xsl:call-template name="HANDLE_AOS_OPEN_STATUS">
+			<xsl:call-template name="BEGIN_AOS_OPEN_STATUS_BRANCH">
 				<xsl:with-param name="operation" select="'Read'"/>
 				<xsl:with-param name="partialStatus" select="'PARTIAL_READ'"/>
 			</xsl:call-template>
@@ -2826,7 +2839,7 @@ See IDSDef2Classes.xsl  -->
 			</xsl:choose>
 			timeBasePath = "";
 			al_status = al_begin_arraystruct_action(ctx, fieldPath.c_str(), timeBasePath.c_str(), &amp;arraySize, &amp;aosCtx);
-			<xsl:call-template name="HANDLE_AOS_OPEN_STATUS">
+			<xsl:call-template name="BEGIN_AOS_OPEN_STATUS_BRANCH">
 				<xsl:with-param name="operation" select="'Read'"/>
 				<xsl:with-param name="partialStatus" select="'PARTIAL_READ'"/>
 			</xsl:call-template>
@@ -2879,7 +2892,7 @@ See IDSDef2Classes.xsl  -->
   				</xsl:otherwise>
 			</xsl:choose>
 			al_status = al_begin_arraystruct_action(ctx, fieldPath.c_str(), timeBasePath.c_str(), &amp;arraySize, &amp;aosCtx);
-			<xsl:call-template name="HANDLE_AOS_OPEN_STATUS">
+			<xsl:call-template name="BEGIN_AOS_OPEN_STATUS_BRANCH">
 				<xsl:with-param name="operation" select="'Read'"/>
 				<xsl:with-param name="partialStatus" select="'PARTIAL_READ'"/>
 			</xsl:call-template>
