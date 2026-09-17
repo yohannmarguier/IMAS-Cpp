@@ -28,10 +28,26 @@ class RuleChecker {
   RuleChecker(const char* marker, const ShimRuleTable::Rule* rules, std::size_t ruleCount)
       : marker_(marker), rules_(rules), ruleCount_(ruleCount), checkedRules_(ruleCount, false) {}
 
+  // The table lookup, for the programs whose per-rule evaluation needs the
+  // Rule itself (its id and citation for a named finding, or to hand to a
+  // multi-leaf reporter). Returns nullptr when the id is absent, so a caller
+  // reports that through failUnknownRule rather than skipping the check --
+  // a hand-rolled scan that simply falls through leaves this class's own
+  // unknown-id branch unreachable.
+  const ShimRuleTable::Rule* find(const char* id) const {
+    const std::size_t index = findIndex(id);
+    return index == ruleCount_ ? nullptr : &rules_[index];
+  }
+
+  void failUnknownRule(const char* id) {
+    ++failures_;
+    std::printf("%s: rule id %s is not present in the rule table\n", marker_, id);
+  }
+
   void check(const char* id, Verdict actual) {
     const std::size_t index = findIndex(id);
     if (index == ruleCount_) {
-      fail("rule id is not present in the rule table");
+      failUnknownRule(id);
       return;
     }
     if (checkedRules_[index]) {

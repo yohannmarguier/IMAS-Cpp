@@ -8,7 +8,6 @@
 
 #include <array>
 #include <cstdio>
-#include <string>
 #include <vector>
 
 namespace {
@@ -200,14 +199,12 @@ int main(int argc, char* argv[]) {
                  "a read did not reach every container the COCOS rules index into");
 
   if (checker.failures() == 0) {
+    // No table lookup here: a COCOS evaluator needs only the two readings, and
+    // RuleChecker::check does the lookup itself -- including reporting an id
+    // that is not in the table, which a hand-rolled scan would silently skip.
     for (const CocosCheck& check : kCocosChecks) {
-      for (const ShimRuleTable::Rule& rule : rules) {
-        if (std::string(rule.id) == check.id) {
-          checker.check(check.id, check.evaluate(/*oracle=*/ oracleValue(oracleIds._equilibrium),
-                                                 /*converted=*/ convertedValue(convertedIds._equilibrium)));
-          break;
-        }
-      }
+      checker.check(check.id, check.evaluate(/*oracle=*/ oracleValue(oracleIds._equilibrium),
+                                             /*converted=*/ convertedValue(convertedIds._equilibrium)));
     }
   }
 

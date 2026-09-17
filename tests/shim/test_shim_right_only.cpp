@@ -10,7 +10,6 @@
 #include <array>
 #include <cstdio>
 #include <cstring>
-#include <string>
 #include <vector>
 
 namespace {
@@ -288,30 +287,34 @@ int main(int argc, char* argv[]) {
                  "a read did not reach every container the right-only rules index into");
 
   if (checker.failures() == 0) {
+    // Looked up through the checker rather than rescanned here: the named
+    // finding below needs the Rule's own id and citation, and an id the table
+    // does not hold must be reported, not skipped.
     for (const RightOnlyCheck& check : kRightOnlyChecks) {
-      for (const ShimRuleTable::Rule& rule : rules) {
-        if (std::string(rule.id) == check.id) {
-          const ShimTest::Verdict verdict = check.evaluate(oracleValue(oracleIds._equilibrium),
-                                                            convertedValue(convertedIds._equilibrium));
-          // docs/SHIM_SUITE_CONVENTION.md S2.1 (C1): a field the shim served
-          // nothing for must read back as absent, never as a plausible
-          // number. Every verdict except Absent and the expected OnlyOracle
-          // means the converted side held *some* value -- a mismatch this
-          // suite must never fold silently into an ordinary rule failure,
-          // because IMAS-Fortran found exactly this shape of bug (uninitialised
-          // memory landing on a never-served field) and it reads, to a
-          // caller doing `!= invalid`, as a served field. Named here as its
-          // own finding, not routed around.
-          if (verdict != ShimTest::Verdict::OnlyOracle && verdict != ShimTest::Verdict::Absent) {
-            std::printf(
-                "%s: finding: %s (%s) served a value for a path the newer dictionary "
-                "introduced (verdict=%s) -- see docs/SHIM_SUITE_CONVENTION.md S2.1\n",
-                kFailureMarker, rule.id, rule.citation, ShimTest::verdictName(verdict));
-          }
-          checker.check(check.id, verdict);
-          break;
-        }
+      const ShimRuleTable::Rule* found = checker.find(check.id);
+      if (found == nullptr) {
+        checker.failUnknownRule(check.id);
+        continue;
       }
+      const ShimRuleTable::Rule& rule = *found;
+      const ShimTest::Verdict verdict = check.evaluate(oracleValue(oracleIds._equilibrium),
+                                                       convertedValue(convertedIds._equilibrium));
+      // docs/SHIM_SUITE_CONVENTION.md S2.1 (C1): a field the shim served
+      // nothing for must read back as absent, never as a plausible
+      // number. Every verdict except Absent and the expected OnlyOracle
+      // means the converted side held *some* value -- a mismatch this
+      // suite must never fold silently into an ordinary rule failure,
+      // because IMAS-Fortran found exactly this shape of bug (uninitialised
+      // memory landing on a never-served field) and it reads, to a
+      // caller doing `!= invalid`, as a served field. Named here as its
+      // own finding, not routed around.
+      if (verdict != ShimTest::Verdict::OnlyOracle && verdict != ShimTest::Verdict::Absent) {
+        std::printf(
+            "%s: finding: %s (%s) served a value for a path the newer dictionary "
+            "introduced (verdict=%s) -- see docs/SHIM_SUITE_CONVENTION.md S2.1\n",
+            kFailureMarker, rule.id, rule.citation, ShimTest::verdictName(verdict));
+      }
+      checker.check(check.id, verdict);
     }
 
     // Vacuity demonstration (docs/SHIM_SUITE_CONVENTION.md D6, F4.3): a shim
@@ -323,13 +326,7 @@ int main(int argc, char* argv[]) {
     // against a real oracle value from an unrelated structural rule. A
     // silently-broken shim's absence must fail that rule's own agreement
     // expectation; if it did not, this family's checks would be vacuous.
-    bool anchorRuleFound = false;
-    for (const ShimRuleTable::Rule& rule : rules) {
-      if (std::strcmp(rule.id, kVacuityAnchorRuleId) == 0) {
-        anchorRuleFound = true;
-        break;
-      }
-    }
+    const bool anchorRuleFound = checker.find(kVacuityAnchorRuleId) != nullptr;
     const ShimTest::ConvertedReading anchorReading(
         scalarReading(convertedIds._equilibrium.time_slice(0).boundary.rho_tor));
     checker.expect(anchorRuleFound && !anchorReading.present(),

@@ -8,7 +8,6 @@
 
 #include <array>
 #include <cstdio>
-#include <string>
 #include <vector>
 
 namespace {
@@ -325,15 +324,18 @@ int main(int argc, char* argv[]) {
                  "a read did not reach every container the structural rules index into");
 
   if (checker.failures() == 0) {
+    // A structural evaluator is handed its Rule, so look it up through the
+    // checker rather than rescanning the table here -- and report an id the
+    // table does not hold instead of falling through and skipping the check.
     for (const StructuralCheck& check : kStructuralChecks) {
-      for (const ShimRuleTable::Rule& rule : rules) {
-        if (std::string(rule.id) == check.id) {
-          checker.check(check.id, check.evaluate(rule,
-                                                  /*oracle=*/ oracleValue(oracleIds._equilibrium),
-                                                  /*converted=*/ convertedValue(convertedIds._equilibrium)));
-          break;
-        }
+      const ShimRuleTable::Rule* rule = checker.find(check.id);
+      if (rule == nullptr) {
+        checker.failUnknownRule(check.id);
+        continue;
       }
+      checker.check(check.id, check.evaluate(*rule,
+                                             /*oracle=*/ oracleValue(oracleIds._equilibrium),
+                                             /*converted=*/ convertedValue(convertedIds._equilibrium)));
     }
   }
 
